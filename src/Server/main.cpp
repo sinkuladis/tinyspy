@@ -12,6 +12,8 @@
 #include <functional>
 #include "NetworkCommunication/ListenerCallAction/ListenerCallAction.hpp"
 #include "socketCreator/socketCreator.hpp"
+#include "ConsoleHandler/ConsoleHandler.hpp"
+#include "SignalsHandler/SignalHandler.hpp"
 
 #define MAX_MSG_LEN 4096
 #define SERWER_IP "127.0.0.1"
@@ -37,10 +39,11 @@ int main(int argc, char *argv[]) {
     bindSocket(mainSocket, serwer);
     startListening(mainSocket, maxConnection);
 
-    //connectClients(mainSocket, serwer, clients);
 
     std::thread first(connectClients, mainSocket, serwer, std::ref(clients));
+    std::thread second(handleConsole);
     first.join();
+    second.join();
 
 
     shut(0, mainSocket);
