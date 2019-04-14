@@ -1,4 +1,5 @@
 #include "ListenerCallAction.hpp"
+#include "../../Client/Client.hpp"
 #include <iostream>
 #include <thread>
 #include <unistd.h>
@@ -31,16 +32,19 @@ void s_client(const int clientSocket) {
     pthread_exit((void *)0);
 }
 
+
+void addNewClient(int clientSocket) {
+    Client client = Client(clientSocket);
+    client.sayHi();
+}
+
+
 void connectClients(int mainSocket, struct sockaddr_in server) {
     while( true ) {
         printf( "Waiting for connection...\n" );
         struct sockaddr_in client = {};
         socklen_t len = sizeof( server );
         int clientSocket = accept(mainSocket,( struct sockaddr * ) & client, & len );
-        if( clientSocket < 0 ) {
-            perror( "accept() ERROR" );
-            break;
-        }
-        new std::thread(s_client, clientSocket);
+        addNewClient(clientSocket);
     }
 }
