@@ -1,4 +1,6 @@
-#include <iostream>
+#ifndef _CLIENT_HPP_
+#define _CLIENT_HPP_
+
 #define BUFF_MSG_LEN 256
 
 class Client{
@@ -8,7 +10,6 @@ class Client{
 
     public:
     Client(int newSocket): socket(newSocket) {};
-    void sayHi() {
-        std::cout << "Hi" << std::endl;
-    }
 };
+
+#endif  // _CLIENT_HPP_
