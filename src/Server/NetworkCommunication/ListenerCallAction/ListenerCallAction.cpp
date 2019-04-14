@@ -1,11 +1,11 @@
 #include "ListenerCallAction.hpp"
-#include "../../Client/Client.hpp"
 #include <iostream>
 #include <thread>
 #include <unistd.h>
 #include <cstring>
 
 #define MAX_MSG_LEN 4096
+/*
 
 void s_client(const int clientSocket) {
     char buffer[ MAX_MSG_LEN ] = {};
@@ -32,19 +32,22 @@ void s_client(const int clientSocket) {
     pthread_exit((void *)0);
 }
 
+*/
 
-void addNewClient(int clientSocket) {
-    Client client = Client(clientSocket);
-    client.sayHi();
+void addNewClient(int clientSocket, std::list<Client> &clients) {
+    std::cout << "Number of clients = " << clients.size() << std::endl;
+    Client newClient = Client(clientSocket);
+    clients.push_back(newClient);
+    std::cout << "New number of clients = " << clients.size() << std::endl;
 }
 
 
-void connectClients(int mainSocket, struct sockaddr_in server) {
+void connectClients(int mainSocket, struct sockaddr_in server, std::list<Client> &clients) {
     while( true ) {
         printf( "Waiting for connection...\n" );
         struct sockaddr_in client = {};
         socklen_t len = sizeof( server );
         int clientSocket = accept(mainSocket,( struct sockaddr * ) & client, & len );
-        addNewClient(clientSocket);
+        addNewClient(clientSocket, clients);
     }
 }

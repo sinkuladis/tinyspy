@@ -8,6 +8,7 @@
 #include <thread>
 #include <iostream>
 #include <unistd.h>
+#include <list>
 #include "NetworkCommunication/ListenerCallAction/ListenerCallAction.hpp"
 #include "socketCreator/socketCreator.hpp"
 
@@ -18,6 +19,7 @@
 #define BASIC_SLEEP 2
 
 std::thread threads[MAX_CONNECTION];
+std::list<Client> clients;
 
 int main(int argc, char *argv[]) {
     if(argc != 3) {
@@ -30,7 +32,7 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in serwer = createServer(port);
     bindSocket(mainSocket, serwer);
     startListening(mainSocket, maxConnection);
-    connectClients(mainSocket, serwer);
+    connectClients(mainSocket, serwer, clients);
 
     shut(0, mainSocket);
     return 0;
