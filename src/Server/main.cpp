@@ -13,7 +13,6 @@
 #include "NetworkCommunication/ListenerCallAction/ListenerCallAction.hpp"
 #include "socketCreator/socketCreator.hpp"
 #include "ConsoleHandler/ConsoleHandler.hpp"
-#include "SignalsHandler/SignalHandler.hpp"
 
 #define MAX_MSG_LEN 4096
 #define SERWER_IP "127.0.0.1"
