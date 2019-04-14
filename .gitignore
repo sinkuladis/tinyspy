@@ -1,0 +1,10 @@
+# Folders
+.vscode/
+build/
+tmp/
+
+# File extensions
+*.user
+*.pro
+
+# Files

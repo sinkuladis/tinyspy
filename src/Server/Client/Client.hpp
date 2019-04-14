@@ -3,13 +3,15 @@
 
 #define BUFF_MSG_LEN 256
 
-class Client{
-    int socket;
-    char buffer_in[ BUFF_MSG_LEN ];
-    char buffer_out[ BUFF_MSG_LEN ];
+class Client {
+  int socket;
+  char buffer_in[BUFF_MSG_LEN];
+  char buffer_out[BUFF_MSG_LEN];
+  int id;
 
-    public:
-    Client(int newSocket): socket(newSocket) {};
+public:
+  Client(int newSocket, int id = 0) : socket(newSocket), id(id){};
+  void mock_answer() const;
 };
 
-#endif  // _CLIENT_HPP_
+#endif // _CLIENT_HPP_
