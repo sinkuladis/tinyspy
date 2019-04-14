@@ -1,5 +1,4 @@
 #include "ConsoleHandler.hpp"
-#include "../SignalsHandler/SignalHandler.hpp"
 #include <iostream>
 
 
