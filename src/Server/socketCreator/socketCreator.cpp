@@ -11,7 +11,6 @@
 #include <unistd.h>
 
 #define MAX_MSG_LEN 4096
-#define SERWER_PORT 8888
 #define SERWER_IP "127.0.0.1"
 #define MAX_CONNECTION 2
 #define MAX_TRY 3
@@ -23,30 +22,31 @@ void shut(int status, int socket) {
     exit (status);
 }
 
-int createMainSocket(int &mainSocket) {
+int createMainSocket() {
     int currTry = 1;
+    int newSocket;
     do {
-        mainSocket = socket( AF_INET, SOCK_STREAM, 0 );
-        if( mainSocket < 0 ) {
+        newSocket = socket( AF_INET, SOCK_STREAM, 0 );
+        if( newSocket < 0 ) {
             perror( "ERROR while creating main socket:" + currTry++ );
             sleep(BASIC_SLEEP);
         }
-    } while (currTry <= MAX_TRY && mainSocket < 0);
+    } while (currTry <= MAX_TRY && newSocket < 0);
 
-    if ( mainSocket < 0 ) {
+    if ( newSocket < 0 ) {
         perror( "ERROR while creating main socket. Shutdown" );
         exit(1);
     }
     else
-        std::cout << "Socket created: " << mainSocket << std::endl;
-    return mainSocket;
+        std::cout << "Socket created: " << newSocket << std::endl;
+    return newSocket;
 
 }
 
-struct sockaddr_in createServer() {
+struct sockaddr_in createServer(int port) {
     struct sockaddr_in server = {
         .sin_family = AF_INET,
-        .sin_port = htons( SERWER_PORT )
+        .sin_port = htons( port )
     };
     return server;
 }

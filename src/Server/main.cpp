@@ -12,7 +12,6 @@
 #include "socketCreator/socketCreator.hpp"
 
 #define MAX_MSG_LEN 4096
-#define SERWER_PORT 8888
 #define SERWER_IP "127.0.0.1"
 #define MAX_CONNECTION 2
 #define MAX_TRY 3
@@ -20,12 +19,17 @@
 
 std::thread threads[MAX_CONNECTION];
 
-int main() {
-    int mainSocket;
-    createMainSocket(mainSocket);
-    struct sockaddr_in serwer = createServer();
+int main(int argc, char *argv[]) {
+    if(argc != 3) {
+        printf("Usage: %s port max_connection\n",argv[0]);
+        return 1;
+    }
+    int port = std::atoi(argv[1]);
+    int maxConnection = std::atoi(argv[2]);
+    int mainSocket = createMainSocket();
+    struct sockaddr_in serwer = createServer(port);
     bindSocket(mainSocket, serwer);
-    startListening(mainSocket, MAX_CONNECTION);
+    startListening(mainSocket, maxConnection);
     connectClients(mainSocket, serwer);
 
     shut(0, mainSocket);
