@@ -1,6 +1,8 @@
 #ifndef _CONSOLEHANDLER_HPP
 #define _CONSOLEHANDLER_HPP
 
-void handleConsole();
+#include <future>
+
+void handleConsole(std::promise<void> &);
 
 #endif //  _CONSOLEHANDLER_HPP

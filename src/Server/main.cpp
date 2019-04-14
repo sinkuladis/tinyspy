@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <list>
 #include <functional>
+#include <future>
 #include "NetworkCommunication/ListenerCallAction/ListenerCallAction.hpp"
 #include "socketCreator/socketCreator.hpp"
 #include "ConsoleHandler/ConsoleHandler.hpp"
@@ -22,14 +23,13 @@
 
 std::thread threads[THREADS];
 
-void hi(int mainSocket, struct sockaddr_in serwer, std::list<Client> cl) {
-    std::cout << "Hi" << std::endl;
-}
 int main(int argc, char *argv[]) {
     if(argc != 3) {
         printf("Usage: %s port max_connection\n",argv[0]);
         return 1;
     }
+    std::promise<void> exitSignal;
+    std::future<void> futureObj = exitSignal.get_future();
     std::list<Client> clients;
     int port = std::atoi(argv[1]);
     int maxConnection = std::atoi(argv[2]);
@@ -37,14 +37,18 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in serwer = createServer(port);
     bindSocket(mainSocket, serwer);
     startListening(mainSocket, maxConnection);
+    setNonblocking(mainSocket);
 
 
-    std::thread first(connectClients, mainSocket, serwer, std::ref(clients));
-    std::thread second(handleConsole);
-    first.join();
-    second.join();
+    std::thread connectionThread(connectClients, mainSocket, serwer, std::ref(clients), std::move(futureObj));
+    std::thread consoleThread(handleConsole, std::ref(exitSignal));
+    connectionThread.join();
+    consoleThread.join();
 
-
-    shut(0, mainSocket);
+    shut(mainSocket);
+    while(clients.size() > 0) {
+        shut(clients.front().getSocket());
+        clients.pop_front();
+    }
     return 0;
 }

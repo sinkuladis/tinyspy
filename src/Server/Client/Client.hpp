@@ -10,6 +10,7 @@ class Client{
 
     public:
     Client(int newSocket): socket(newSocket) {};
+    int getSocket() { return socket; }
 };
 
 #endif  // _CLIENT_HPP_

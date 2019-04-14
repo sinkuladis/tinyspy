@@ -9,6 +9,8 @@
 #include <thread>
 #include <iostream>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #define MAX_MSG_LEN 4096
 #define SERWER_IP "127.0.0.1"
@@ -16,10 +18,9 @@
 #define MAX_TRY 3
 #define BASIC_SLEEP 2
 
-void shut(int status, int socket) {
-    std::cout << "Closing socket " << socket << std::endl;
+void shut(int socket) {
+    std::cout << "Zamykanie socketu: " << socket << std::endl;
     shutdown( socket, SHUT_RDWR );
-    exit (status);
 }
 
 int createMainSocket() {
@@ -64,8 +65,10 @@ void bindSocket(int socket, sockaddr_in &server) {
         }
     } while (currTry <= MAX_TRY && bindStatus < 0);
 
-    if ( bindStatus < 0 )
-        shut(1, socket);
+    if ( bindStatus < 0 ) {
+        shut(socket);
+        exit(1);
+    }
     else
         std::cout << "Socket binded." << std::endl;
 }
@@ -81,8 +84,18 @@ void startListening(int socket, int maxConnection) {
         }
     } while (currTry <= MAX_TRY && listenStatus < 0);
 
-    if ( listenStatus < 0 )
-        shut(2, socket);
+    if ( listenStatus < 0 ) {
+        shut(socket);
+        exit(1);
+    }
     else
         std::cout << "Listening." << std::endl;
 }
+
+int setNonblocking(int fd)
+{
+    int flags;
+    if (-1 == (flags = fcntl(fd, F_GETFL, 0)))
+        flags = 0;
+    return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+}     

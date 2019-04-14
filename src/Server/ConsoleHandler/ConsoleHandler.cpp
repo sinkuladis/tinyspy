@@ -3,19 +3,25 @@
 #include <cstdio>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #define MAX_INPUT 20
 
-
-void runcommand(std::string command) {
-    if("shutdown" == command) {
-        std::cout << "Zamykanie serwera" << std::endl;
-        exit(0);
-    }
-    
+void runShutdown(std::promise<void> &exitSignal) {
+    std::cout << "Rozpoczeto zamykanie serwera" << std::endl;
+    exitSignal.set_value();
+    sleep(1);
+    std::cout << "Wylaczanie obslugi konsoli" << std::endl;
+    pthread_exit((void *)0);
 }
 
-void handleConsole() {
+
+void runcommand(std::string command, std::promise<void> &exitSignal) {
+    if("shutdown" == command)
+        runShutdown(exitSignal);
+}
+
+void handleConsole(std::promise<void> &exitSignal) {
     char buffer[MAX_INPUT];
     int idx = 0;
 
@@ -25,7 +31,7 @@ void handleConsole() {
             buffer[idx] = inputChar;
             if (inputChar == '\n') {
                 buffer[idx] = '\0';
-                runcommand(buffer);
+                runcommand(buffer, exitSignal);
                 idx = 0;
             }
             else
