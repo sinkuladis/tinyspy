@@ -1,10 +1,10 @@
 # Folders
 .vscode/
-build/
 tmp/
 
 # File extensions
-*.user
-*.pro
+*.o
+*.pro.user
 
 # Files
+.qmake.stash
