@@ -25,9 +25,8 @@ void ClientConnection::readSocket() {
     // TODO: proper error handling
     exit(1);
   }
-
+  // TODO: buffer size + 1
   recvBuff[numbytes] = '\0';
-  //  std::cout << recvBuff << std::endl;
 }
 
 void ClientConnection::clearBuffers() {
@@ -56,25 +55,19 @@ struct addrinfo *ClientConnection::get_sockaddr(const char *hostname,
   return results;
 }
 
-int ClientConnection::open_connection(struct addrinfo *addr_list) {
+int ClientConnection::open_connection(struct addrinfo *addr) {
 
-  struct addrinfo *p;
-  int sockfd;
+  //  struct addrinfo *p;
+  int sockfd = -1;
 
-  for (p = addr_list; p != NULL; p = p->ai_next) {
-    sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+  sockfd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
 
-    if (sockfd == -1)
-      continue;
-
-    if (connect(sockfd, p->ai_addr, p->ai_addrlen) != -1)
-      break;
+  if (connect(sockfd, addr->ai_addr, addr->ai_addrlen) < 0) {
+    close(sockfd);
+    err(EXIT_FAILURE, "%s", "Unable to connect");
+    exit(1);
   }
 
-  freeaddrinfo(addr_list);
-
-  if (p == NULL)
-    err(EXIT_FAILURE, "%s", "Unable to connect");
-  else
-    return sockfd;
+  freeaddrinfo(addr);
+  return sockfd;
 }
