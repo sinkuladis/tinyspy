@@ -11,23 +11,22 @@
 #define MAX_MSG_LEN 4096
 
 void addNewClient(int clientSocket, std::list<Client> &clients) {
-  Client newClient = Client(clientSocket, clients.size());
-  clients.push_back(newClient);
-  newClient.mock_answer();
+  Client *newClient = new Client(clientSocket, clients.size());
+  clients.push_back( std::ref( *newClient ) );
+  //newClient.mock_answer();
 }
 
 
 void *connectClients(void *servData) {
-    struct serverData *tmpServData = (struct serverData*)servData;
+    struct connectArgs *tmpServData = (struct connectArgs*)servData;
 
-    std::list<Client> clients;
+    std::list<Client> &clients = std::ref(tmpServData->clients);
     int serverSocket = createMainSocket();
-    struct sockaddr_in server = createServer(tmpServData->port);
+    struct sockaddr_in server = getServerStruct(tmpServData->port);
     bindSocket(serverSocket, server);
     startListening(serverSocket, tmpServData->maxConnection);
     setNonblocking(serverSocket);
 
-    
     while (true) {
         struct sockaddr_in client = {};
         socklen_t len = sizeof( server );
