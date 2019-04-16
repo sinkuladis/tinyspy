@@ -11,6 +11,7 @@ class Client {
 
 public:
   Client(int newSocket, int id = 0) : socket(newSocket), id(id){};
+  ~Client();
   void mock_answer() const;
   int getSocket() { return socket; }
 };
