@@ -63,7 +63,8 @@ int main(int argc, char *argv[]) {
         std::cout << "Watek zamkniety pomyslnie" << std::endl;
     if ( pthread_cancel(vecOfThreads[1]) == 0 )
         std::cout << "Watek zamkniety pomyslnie" << std::endl;
-
+   if ( pthread_cancel(vecOfThreads[2]) == 0 )
+        std::cout << "Watek zamkniety pomyslnie" << std::endl;
 /*    consoleThread.join();
     closeThreads();
     connectionThread.join();
