@@ -22,7 +22,7 @@ void *connectClients(void *servData) {
 
     std::list<Client> clients;
     int serverSocket = createMainSocket();
-    struct sockaddr_in server = createServer(tmpServData->port);
+    struct sockaddr_in server = getServerStruct(tmpServData->port);
     bindSocket(serverSocket, server);
     startListening(serverSocket, tmpServData->maxConnection);
     setNonblocking(serverSocket);
@@ -37,5 +37,4 @@ void *connectClients(void *servData) {
             std::cout << "Dodano nowego klienta" << std::endl;
         }
     }
-    std::cout << "Wylaczanie odbierania polaczen" << std::endl;
 }
