@@ -17,7 +17,7 @@ void runcommand(std::string command, bool &shouldExit) {
         runShutdown(shouldExit);
 }
 
-void *handleConsole(void *id) {
+void *handleConsole() {
   char buffer[MAX_INPUT];
   int idx = 0;
   bool shouldExit = false;

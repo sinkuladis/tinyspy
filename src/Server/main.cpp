@@ -61,12 +61,9 @@ int main(int argc, char *argv[]) {
 
     pthread_create((&vecOfThreads[0]), NULL, connectClients, (void *)&conn_args );
     pthread_create((&vecOfThreads[2]), NULL, prepSelect, (void *)&select_args );
-    pthread_create((&vecOfThreads[1]), NULL, handleConsole, (void *)0 );
-    
-    (void) pthread_join(vecOfThreads[1], NULL);
+    handleConsole();
+
     if ( pthread_cancel(vecOfThreads[0]) == 0 )
-        std::cout << "Watek zamkniety pomyslnie" << std::endl;
-    if ( pthread_cancel(vecOfThreads[1]) == 0 )
         std::cout << "Watek zamkniety pomyslnie" << std::endl;
    if ( pthread_cancel(vecOfThreads[2]) == 0 )
         std::cout << "Watek zamkniety pomyslnie" << std::endl;

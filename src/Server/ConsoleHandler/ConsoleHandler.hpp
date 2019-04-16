@@ -3,6 +3,6 @@
 
 #include <future>
 
-void *handleConsole(void *);
+void *handleConsole();
 
 #endif //  _CONSOLEHANDLER_HPP
