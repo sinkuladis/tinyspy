@@ -61,3 +61,8 @@ void selectForReading(fd_set* cli_fd_set_ptr, std::list<Client> &clients){
     }
     std::cout<<"Select ended "<<std::endl;
 }
+
+void* prepSelect(void* select_args) {
+    struct selectArgs* args = (struct selectArgs*) select_args;
+    selectForReading(args->cli_set_ptr, std::ref(args->clients));
+}
