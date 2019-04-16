@@ -14,7 +14,7 @@
 #include <future>
 #include <vector>
 #include "NetworkCommunication/ListenerCallAction/ListenerCallAction.hpp"
-#include "NetworkCommunication/ListenerCallAction/ReadingAction.hpp"
+#include "NetworkCommunication/ReadingAction/ReadingAction.hpp"
 #include "socketCreator/socketCreator.hpp"
 #include "ConsoleHandler/ConsoleHandler.hpp"
 
@@ -26,8 +26,6 @@
 #define NUM_THREADS 2
 
 pthread_t vecOfThreads[NUM_THREADS];
-std::list<Clients> clients;
-fd_set cli_fdset;
 
 void *connectionThread(void *id) {
     while(true)
@@ -47,15 +45,21 @@ int main(int argc, char *argv[]) {
     struct serverData servData = {
         .port = std::atoi(argv[1]),
         .maxConnection = std::atoi(argv[2])
-	.clients = std::ref(clients);
     };
-    
-    struct selectArgs select_args = {
+    std::list<Client> clients;
+    fd_set cli_fdset;
+    struct connectArgs conn_args = {
 	.clients = std::ref(clients),
-	.cli_set_ptr = cli_fdset
+        .port = std::atoi(argv[1]),
+        .maxConnection = std::atoi(argv[2])
     };
 
-    pthread_create((&vecOfThreads[0]), NULL, connectClients, (void *)&servData );
+    struct selectArgs select_args = {
+	.clients = std::ref(clients),
+	.cli_set_ptr = &cli_fdset
+    };
+
+    pthread_create((&vecOfThreads[0]), NULL, connectClients, (void *)&conn_args );
     pthread_create((&vecOfThreads[2]), NULL, prepSelect, (void *)&select_args );
     pthread_create((&vecOfThreads[1]), NULL, handleConsole, (void *)0 );
     
