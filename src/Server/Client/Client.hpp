@@ -14,6 +14,7 @@ public:
   ~Client();
   void mock_answer() const;
   int getSocket() { return socket; }
+  bool operator==(const Client& other) const;
 };
 
 #endif // _CLIENT_HPP_
