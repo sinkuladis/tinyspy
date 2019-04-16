@@ -14,6 +14,7 @@
 #include <future>
 #include <vector>
 #include "NetworkCommunication/ListenerCallAction/ListenerCallAction.hpp"
+#include "NetworkCommunication/ListenerCallAction/ReadingAction.hpp"
 #include "socketCreator/socketCreator.hpp"
 #include "ConsoleHandler/ConsoleHandler.hpp"
 
@@ -25,7 +26,8 @@
 #define NUM_THREADS 2
 
 pthread_t vecOfThreads[NUM_THREADS];
-
+std::list<Clients> clients;
+fd_set cli_fdset;
 
 void *connectionThread(void *id) {
     while(true)
@@ -46,11 +48,16 @@ int main(int argc, char *argv[]) {
         .port = std::atoi(argv[1]),
         .maxConnection = std::atoi(argv[2])
     };
-
+    
+    struct selectArgs select_args = {
+	.clients = std::ref(clients),
+	.cli_set_ptr = cli_fdset
+    };
 
     pthread_create((&vecOfThreads[0]), NULL, connectClients, (void *)&servData );
+    pthread_create((&vecOfThreads[2]), NULL, prepSelect, (void *)&select_args );
     pthread_create((&vecOfThreads[1]), NULL, handleConsole, (void *)0 );
-
+    
     (void) pthread_join(vecOfThreads[1], NULL);
     if ( pthread_cancel(vecOfThreads[0]) == 0 )
         std::cout << "Watek zamkniety pomyslnie" << std::endl;
