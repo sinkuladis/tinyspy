@@ -5,7 +5,7 @@
 
 void shut(int);
 int createMainSocket();
-struct sockaddr_in createServer(int);
+struct sockaddr_in getServerStruct(int);
 void bindSocket(int, sockaddr_in &);
 void startListening(int, int);
 int setNonblocking(int);

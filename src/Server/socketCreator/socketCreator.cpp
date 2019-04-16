@@ -38,7 +38,7 @@ int createMainSocket() {
 
 }
 
-struct sockaddr_in createServer(int port) {
+struct sockaddr_in getServerStruct(int port) {
     struct sockaddr_in server = {
         .sin_family = AF_INET,
         .sin_port = htons( port )
