@@ -5,12 +5,14 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <pthread.h>
 #include <thread>
 #include <iostream>
 #include <unistd.h>
 #include <list>
 #include <functional>
 #include <future>
+#include <vector>
 #include "NetworkCommunication/ListenerCallAction/ListenerCallAction.hpp"
 #include "socketCreator/socketCreator.hpp"
 #include "ConsoleHandler/ConsoleHandler.hpp"
@@ -20,35 +22,49 @@
 #define THREADS 2
 #define MAX_TRY 3
 #define BASIC_SLEEP 2
+#define NUM_THREADS 2
 
-std::thread threads[THREADS];
+pthread_t vecOfThreads[NUM_THREADS];
+
+
+void *connectionThread(void *id) {
+    while(true)
+        std::cout << "A";
+}
+
+void *consoleThread(void *id) {
+    while(true)
+        std::cout << "B";
+}
 
 int main(int argc, char *argv[]) {
     if(argc != 3) {
         printf("Usage: %s port max_connection\n",argv[0]);
         return 1;
     }
-    std::promise<void> exitSignal;
-    std::future<void> futureObj = exitSignal.get_future();
-    std::list<Client> clients;
-    int port = std::atoi(argv[1]);
-    int maxConnection = std::atoi(argv[2]);
-    int mainSocket = createMainSocket();
-    struct sockaddr_in serwer = createServer(port);
-    bindSocket(mainSocket, serwer);
-    startListening(mainSocket, maxConnection);
-    setNonblocking(mainSocket);
+    struct serverData servData = {
+        .port = std::atoi(argv[1]),
+        .maxConnection = std::atoi(argv[2])
+    };
 
 
-    std::thread connectionThread(connectClients, mainSocket, serwer, std::ref(clients), std::move(futureObj));
-    std::thread consoleThread(handleConsole, std::ref(exitSignal));
+    pthread_create((&vecOfThreads[0]), NULL, connectClients, (void *)&servData );
+    pthread_create((&vecOfThreads[1]), NULL, handleConsole, (void *)0 );
+
+    (void) pthread_join(vecOfThreads[1], NULL);
+    if ( pthread_cancel(vecOfThreads[0]) == 0 )
+        std::cout << "Watek zamkniety pomyslnie" << std::endl;
+    if ( pthread_cancel(vecOfThreads[1]) == 0 )
+        std::cout << "Watek zamkniety pomyslnie" << std::endl;
+
+/*    consoleThread.join();
+    closeThreads();
     connectionThread.join();
-    consoleThread.join();
 
     shut(mainSocket);
     while(clients.size() > 0) {
         shut(clients.front().getSocket());
         clients.pop_front();
-    }
+    }*/
     return 0;
 }

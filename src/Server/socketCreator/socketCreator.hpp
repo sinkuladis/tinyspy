@@ -10,4 +10,9 @@ void bindSocket(int, sockaddr_in &);
 void startListening(int, int);
 int setNonblocking(int);
 
+struct serverData {
+    int port;
+    int maxConnection;
+};
+
 #endif  // _SOCKETCREATOR_HPP_

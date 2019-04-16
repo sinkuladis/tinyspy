@@ -7,30 +7,28 @@
 
 #define MAX_INPUT 20
 
-void runShutdown[[noreturn]](std::promise<void> &exitSignal) {
-  std::cout << "Rozpoczeto zamykanie serwera" << std::endl;
-  exitSignal.set_value();
-  sleep(1);
-  std::cout << "Wylaczanie obslugi konsoli" << std::endl;
-  pthread_exit(nullptr);
+void runShutdown(bool & shouldExit) {
+    std::cout << "Rozpoczeto zamykanie serwera" << std::endl;
+    shouldExit = true;
 }
 
-void runcommand(std::string command, std::promise<void> &exitSignal) {
-  if ("shutdown" == command)
-    runShutdown(exitSignal);
+void runcommand(std::string command, bool &shouldExit) {
+    if ("shutdown" == command)
+        runShutdown(shouldExit);
 }
 
-void handleConsole(std::promise<void> &exitSignal) {
+void *handleConsole(void *id) {
   char buffer[MAX_INPUT];
   int idx = 0;
+  bool shouldExit = false;
 
-  while (true) {
+  while (!shouldExit) {
     char inputChar = getchar();
     if (idx < MAX_INPUT - 1) {
       buffer[idx] = inputChar;
       if (inputChar == '\n') {
         buffer[idx] = '\0';
-        runcommand(buffer, exitSignal);
+        runcommand(buffer, shouldExit);
         idx = 0;
       } else
         idx++;

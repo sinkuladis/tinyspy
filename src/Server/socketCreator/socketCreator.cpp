@@ -32,14 +32,8 @@ int createMainSocket() {
             perror( "ERROR while creating main socket:" + currTry++ );
             sleep(BASIC_SLEEP);
         }
-    } while (currTry <= MAX_TRY && newSocket < 0);
-
-    if ( newSocket < 0 ) {
-        perror( "ERROR while creating main socket. Shutdown" );
-        exit(1);
-    }
-    else
-        std::cout << "Socket created: " << newSocket << std::endl;
+    } while (newSocket < 0);
+    std::cout << "Socket created: " << newSocket << std::endl;
     return newSocket;
 
 }
@@ -63,14 +57,8 @@ void bindSocket(int socket, sockaddr_in &server) {
             perror( "ERROR while binding socket: " + currTry++ );
             sleep(BASIC_SLEEP);
         }
-    } while (currTry <= MAX_TRY && bindStatus < 0);
-
-    if ( bindStatus < 0 ) {
-        shut(socket);
-        exit(1);
-    }
-    else
-        std::cout << "Socket binded." << std::endl;
+    } while (bindStatus < 0);
+    std::cout << "Socket binded." << std::endl;
 }
 
 void startListening(int socket, int maxConnection) {
@@ -82,14 +70,8 @@ void startListening(int socket, int maxConnection) {
             perror( "ERROR while listening: " + currTry++ );
             sleep(BASIC_SLEEP);
         }
-    } while (currTry <= MAX_TRY && listenStatus < 0);
-
-    if ( listenStatus < 0 ) {
-        shut(socket);
-        exit(1);
-    }
-    else
-        std::cout << "Listening." << std::endl;
+    } while (listenStatus < 0);
+    std::cout << "Listening." << std::endl;
 }
 
 int setNonblocking(int fd)

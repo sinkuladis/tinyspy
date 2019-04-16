@@ -3,6 +3,6 @@
 
 #include <future>
 
-void handleConsole(std::promise<void> &);
+void *handleConsole(void *);
 
 #endif //  _CONSOLEHANDLER_HPP

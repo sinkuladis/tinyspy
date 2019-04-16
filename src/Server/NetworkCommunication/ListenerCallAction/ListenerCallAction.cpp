@@ -1,5 +1,6 @@
 #include "ListenerCallAction.hpp"
 #include "../../Client/Client.hpp"
+#include "../../socketCreator/socketCreator.hpp"
 #include <cstring>
 #include <iostream>
 #include <thread>
@@ -16,11 +17,21 @@ void addNewClient(int clientSocket, std::list<Client> &clients) {
 }
 
 
-void connectClients(int mainSocket, struct sockaddr_in server, std::list<Client> &clients, std::future<void> futureObj) {
-    while (futureObj.wait_for(std::chrono::milliseconds(1)) == std::future_status::timeout) {
+void *connectClients(void *servData) {
+    struct serverData *tmpServData = (struct serverData*)servData;
+
+    std::list<Client> clients;
+    int serverSocket = createMainSocket();
+    struct sockaddr_in server = createServer(tmpServData->port);
+    bindSocket(serverSocket, server);
+    startListening(serverSocket, tmpServData->maxConnection);
+    setNonblocking(serverSocket);
+
+    
+    while (true) {
         struct sockaddr_in client = {};
         socklen_t len = sizeof( server );
-        int clientSocket = accept(mainSocket,( struct sockaddr * ) & client, & len );
+        int clientSocket = accept(serverSocket,( struct sockaddr * ) & client, & len );
         if(clientSocket > 0) {
             addNewClient(clientSocket, clients);
             std::cout << "Dodano nowego klienta" << std::endl;
