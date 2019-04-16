@@ -21,7 +21,9 @@ void serveClients(fd_set* cli_fd_set_ptr, int nclients, std::list<Client> &clien
 	    std::cout << "Klient " << cliSock << " napisal znakow: " << ret << std::endl;
 	    free(buf);
 	    if(ret == 0) { // END OF STREAM - POLACZENIE ZAMKNIETE - NALEZY WYRZUCIC KLIENTA;
-		clients.remove(*c); //UWAGA - SOCKET JEST OTWARTY, JESLI KLIENT GO SAM NIE ZAMYKA
+		Client& client = std::ref(*c);		
+		clients.remove(client); //UWAGA - SOCKET JEST OTWARTY, JESLI KLIENT GO SAM NIE ZAMYKA
+		//delete &client;
 		FD_CLR(cliSock, cli_fd_set_ptr);
 		std::cout<<"Usunieto 'polaczenie' z klientem na sockecie: " << cliSock << std::endl;
 	    }
@@ -42,8 +44,8 @@ void selectForReading(fd_set* cli_fd_set_ptr, std::list<Client> &clients){
 	timeout.tv_sec = 10;
 	max_fd=0;	
 	FD_ZERO(cli_fd_set_ptr);	
-	for (Client client : clients){
-	    int cliSock = client.getSocket();
+	for (auto c = clients.begin() ; c != clients.end() ; ++c){
+	    int cliSock = c->getSocket();
  	    if( cliSock > 0){
 		std::cout <<"Do fdsetu dodajemy: "<< cliSock << std::endl;
 		FD_SET(cliSock, cli_fd_set_ptr);
