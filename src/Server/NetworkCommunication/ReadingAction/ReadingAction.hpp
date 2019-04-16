@@ -7,7 +7,7 @@
 struct selectArgs {
     std::list<Clients>& clients;
     fd_set* cli_set_ptr;
-}
+};
 
 void readClientMessage(Client& client);
 void selectForReading(fd_set* cli_fd_set_ptr, std::list<Client> &clients);

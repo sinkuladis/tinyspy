@@ -47,6 +47,7 @@ int main(int argc, char *argv[]) {
     struct serverData servData = {
         .port = std::atoi(argv[1]),
         .maxConnection = std::atoi(argv[2])
+	.clients = std::ref(clients);
     };
     
     struct selectArgs select_args = {
@@ -65,6 +66,7 @@ int main(int argc, char *argv[]) {
         std::cout << "Watek zamkniety pomyslnie" << std::endl;
    if ( pthread_cancel(vecOfThreads[2]) == 0 )
         std::cout << "Watek zamkniety pomyslnie" << std::endl;
+
 /*    consoleThread.join();
     closeThreads();
     connectionThread.join();
