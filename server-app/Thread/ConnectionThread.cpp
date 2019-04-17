@@ -6,7 +6,7 @@
 #include "./ConnectionThread.h"
 #include "../Socket/Socket.h"
 #include<sys/select.h>
-#include<sys/types.h>s
+#include<sys/types.h>
 #include<unistd.h>
 #include<sys/time.h>
 #include <functional>
@@ -17,6 +17,7 @@ void ConnectionThread::run() {
     /*TODO nalezy odrzucic wywolanie, jesli thread juz dziala, z racji bezpieczenstwa
     moze byc kilka obiektow ConnectionThread, ale ta metoda moze byyc odpalona tylko raz, az skonczy sie ostatni thread - mutex trylock?*/
     pthread_create(&thread_id, NULL, conn_routine, this);
+    pthread_join(thread_id, NULL);
 }
 
 void* ConnectionThread::conn_routine(void* connectionThreadPtr) {

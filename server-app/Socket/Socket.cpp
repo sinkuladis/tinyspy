@@ -13,7 +13,8 @@ Socket::Socket(int domain, int type) {
     do {
         sock_fd = socket( domain , type, 0 );
         if( sock_fd < 0 ) {
-            perror( "ERROR while creating main socket:" + currTry++ );
+
+            perror( "ERROR while creating a socket in try:");
             sleep(BASIC_SLEEP);
         }
     } while (sock_fd < 0);
@@ -61,10 +62,10 @@ void Socket::listen(int max_connections) {
     std::cout << "Listening." << std::endl;
 }
 
-int Socket::read(int nbytes) {
+int Socket::read(void* buf, int nbytes) {
     //TODO read nbytes; if 0 -> break loop and ret 0
-
-    return 1;
+    int ret = ::read(sock_fd, buf, nbytes);
+    return ret;
 }
 
 int Socket::write(void* output) {

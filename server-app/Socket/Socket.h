@@ -19,7 +19,7 @@ public:
     void shut();
     void setNonblocking();
 
-    int read(int nbytes=1024);
+    int read(void*buffer, int nbytes=1024);
     int write(void*);
 
     int getSockFd() const;

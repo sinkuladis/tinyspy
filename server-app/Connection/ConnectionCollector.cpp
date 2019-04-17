@@ -7,12 +7,16 @@
 #include "ConnectionCollector.h"
 
 Connection& ConnectionCollector::addConnection(Socket& listenSock) {
-    Socket newSock = accept(listenSock.getSockFd(), nullptr, NULL); //jesli bedzie potrzeba zapisac informacje o polaczeniu, bedzie mozna zrobic to tutaj i przekazac odpowiednia strukture adresu nowemu polaczeniu
+    Socket& newSock = listenSock.accept(); //jesli bedzie potrzeba zapisac informacje o polaczeniu, bedzie mozna zrobic to tutaj i przekazac odpowiednia strukture adresu nowemu polaczeniu
     bool ok;
-    ok = connections.insert({newSock.getSockFd(), newSock}).second;
+    Connection* newConnect = new Connection(newSock);
+    ok = connections.insert( {newSock.getSockFd(), std::ref(*newConnect) } ).second;
+
+    int i = 0;
+    d_test.push_back(i);
 
     return std::ref(connections.at(newSock.getSockFd()));
-    //if not ok socket was already in use
+    //if not ok socket was already in use though it shouldnt happen since its the os which assigns descriptors
 }
 
 Connection &ConnectionCollector::at(const int sock_fd) {
@@ -20,7 +24,12 @@ Connection &ConnectionCollector::at(const int sock_fd) {
 }
 
 void ConnectionCollector::readReceivedData(Connection &conn) {
-    conn.readReceivedData();
+    try {
+        conn.readReceivedData();
+    }catch (std::exception e) {
+        connections.erase(conn.getSock().getSockFd());
+    }
+
 }
 
 void ConnectionCollector::readReceivedData(const int sock_fd) {

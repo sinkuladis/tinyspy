@@ -17,6 +17,8 @@ class ConnectionCollector{
 private:
     std::unordered_map<int, Connection> connections;
     std::mutex mutex;
+
+    std::vector<int> d_test;
 public:
     ConnectionCollector()=default;
 

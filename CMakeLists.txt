@@ -2,8 +2,10 @@ cmake_minimum_required(VERSION 3.13)
 project(untitled)
 
 set(CMAKE_CXX_STANDARD 11)
+SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS} -pthread")
 
 add_executable(Server.out server-app/main.cpp
+        server-app/Pipes/Pipe.h server-app/Pipes/Pipe.cpp
         server-app/Socket/Socket.h server-app/Socket/Socket.cpp
         server-app/Connection/Connection.h server-app/Connection/Connection.cpp
         server-app/Connection/ClientConnection.h server-app/Connection/ClientConnection.cpp
