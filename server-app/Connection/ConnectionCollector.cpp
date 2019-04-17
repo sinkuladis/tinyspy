@@ -20,7 +20,7 @@ Connection &ConnectionCollector::at(const int sock_fd) {
 }
 
 void ConnectionCollector::readReceivedData(Connection &conn) {
-    readReceivedData(conn.getSock().read());
+    conn.readReceivedData();
 }
 
 void ConnectionCollector::readReceivedData(const int sock_fd) {
