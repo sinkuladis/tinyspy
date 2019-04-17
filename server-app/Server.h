@@ -12,17 +12,16 @@
 
 class Server {
 private:
-    ConnectionThread& connectionThread;
-    ConnectionCollector connectionCollector;
+    ConnectionThread connectionThread;
+    ConnectionCollector& connCollector;
     sockaddr_in server_addr;
     int console_fd;
 public:
-    Server(int listening_port, int max_pend_conn) : connectionCollector() {
+    Server(int listening_port, int max_pend_conn, int nconsole_fd) : console_fd(nconsole_fd), connectionThread(console_fd, max_pend_conn), connCollector(std::ref(connectionThread.getConnCollector())) {
         server_addr = {
                 .sin_family=AF_INET,
                 .sin_port=htons(listening_port)
         };
-        connectionThread = ConnectionThread(console_fd, max_pend_conn);
     }
     void start();
     int getListeningPort() { return ntohs(server_addr.sin_port); }
