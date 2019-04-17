@@ -5,6 +5,8 @@
 #ifndef TINYSPY_CONNECTIONMANAGER_H
 #define TINYSPY_CONNECTIONMANAGER_H
 
+#include <mutex>
+#include <vector>
 #include <sys/types.h>
 #include <sys/select.h>
 #include <unistd.h>
@@ -14,15 +16,18 @@
 class ConnectionCollector{
 private:
     std::unordered_map<int, Connection> connections;
+    std::mutex mutex;
 public:
     ConnectionCollector()=default;
-    ConnectionCollector(std::unordered_map<int, Connection> &nConnections) : connections(nConnections) {}
 
     int getConnectionsFdSet(fd_set*); // monitored method
-    int[] getConnectionDescriptors();
-    void readReceivedData(const Connection& conn);
+    std::vector<int> getConnectionDescriptors();
+    void readReceivedData(Connection& conn);
     void readReceivedData(const int sock_fd);
-    void addConnection(const int sock_fd);
+    Connection& at(const int sock_fd);
+    Connection& addConnection(Socket&);
+    void enter() { mutex.lock(); }
+    void leave() { mutex.unlock(); }
 };
 
 
