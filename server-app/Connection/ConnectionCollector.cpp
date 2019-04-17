@@ -12,8 +12,8 @@ Connection& ConnectionCollector::addConnection(Socket& listenSock) {
     Connection* newConnect = new Connection(newSock);
     ok = connections.insert( {newSock.getSockFd(), std::ref(*newConnect) } ).second;
 
-    int i = 0;
-    d_test.push_back(i);
+    //int i = 0;
+    //d_test.push_back(i);
 
     return std::ref(connections.at(newSock.getSockFd()));
     //if not ok socket was already in use though it shouldnt happen since its the os which assigns descriptors
