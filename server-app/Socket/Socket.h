@@ -11,6 +11,7 @@ class Socket {
 private:
     static const int BASIC_SLEEP = 3;
     int sock_fd;
+    sockaddr_in sock_addr;
 public:
     Socket(int domain=AF_INET, int type=SOCK_STREAM);
     void bind(sockaddr_in&);
@@ -22,8 +23,8 @@ public:
     int write(void*);
 
     int getSockFd() const;
-
-    int accept(struct sockaddr_in* sock_addr=nullptr);
+    void connect();
+    Socket& accept(int new_sock_domain=AF_INET, int new_sock_type=SOCK_STREAM);
 };
 
 

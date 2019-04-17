@@ -6,6 +6,7 @@
 #include<iostream>
 #include <unistd.h>
 #include <fcntl.h>
+#include <functional>
 
 Socket::Socket(int domain, int type) {
     int currTry = 1;
@@ -24,17 +25,18 @@ void Socket::shut() { //albo w destruktorze
     shutdown( sock_fd, SHUT_RDWR );
 }
 
-void Socket::bind(sockaddr_in &addr) {
+void Socket::bind(sockaddr_in &addr_to_bind) {
     int currTry = 1;
     int bindStatus;
 
     do {
-        bindStatus = ::bind( sock_fd, ( struct sockaddr * ) & addr, sizeof( addr ) );
+        bindStatus = ::bind( sock_fd, ( struct sockaddr * ) &addr_to_bind, sizeof( addr_to_bind ) );
         if( bindStatus < 0 ) {
             perror( "ERROR while binding socket: " + currTry++ );
             sleep(BASIC_SLEEP);
         }
     } while (bindStatus < 0);
+    sock_addr = addr_to_bind;
     std::cout << "Socket binded." << std::endl;
 }
 
@@ -61,6 +63,7 @@ void Socket::listen(int max_connections) {
 
 int Socket::read(int nbytes) {
     //TODO read nbytes; if 0 -> break loop and ret 0
+
     return 1;
 }
 
@@ -73,20 +76,16 @@ int Socket::getSockFd() const {
     return sock_fd;
 }
 
-int Socket::accept(struct sockaddr_in* sock_addr) {
-    socklen_t addr_len;
-    int new_sockfd=0;
-    if(sock_addr != nullptr){
-        addr_len = sizeof( sock_addr );
-        new_sockfd = ::accept(sock_fd,( struct sockaddr * ) &sock_addr, &addr_len );
-    }
-    else
-        new_sockfd = ::accept(sock_fd, nullptr, nullptr );
-    if(new_sockfd < 0 ) {
-        //TODO error
-    }
-    return new_sockfd;
+Socket& Socket::accept(int new_sock_domain, int new_sock_type) {
+    Socket newSock(new_sock_domain, new_sock_type);
+    socklen_t addr_len = sizeof( newSock.sock_addr );
+    int new_sockfd = ::accept(sock_fd,( struct sockaddr * ) &newSock.sock_addr, &addr_len );
 
+    if(new_sockfd <= 0 ) {
+        //TODO error
+    }else
+        newSock.sock_fd = new_sockfd;
+    return std::ref(newSock);
 }
 
 
