@@ -3,3 +3,5 @@
 //
 
 #include "Connection.h"
+
+Connection::Connection(Socket& nSock) : sock(nSock) {}

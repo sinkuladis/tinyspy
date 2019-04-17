@@ -11,7 +11,11 @@
 class Connection {
 protected:
     Socket sock;
+    void* in_buffer;
+    char* out_buffer;
+    //std::list<Task> taskQueue;
 public:
+    Connection(Socket& nSock);
     virtual void readReceivedData();
     virtual void delegateWork();
     Socket getSock() { return sock;}
