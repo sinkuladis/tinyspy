@@ -16,8 +16,10 @@
 void ConnectionThread::run() {
     /*TODO nalezy odrzucic wywolanie, jesli thread juz dziala, z racji bezpieczenstwa
     moze byc kilka obiektow ConnectionThread, ale ta metoda moze byyc odpalona tylko raz, az skonczy sie ostatni thread - mutex trylock?*/
+    run_mutex.lock();
     pthread_create(&thread_id, NULL, conn_routine, this);
     pthread_join(thread_id, NULL);
+    run_mutex.unlock();
 }
 
 void* ConnectionThread::conn_routine(void* connectionThreadPtr) {
@@ -46,6 +48,7 @@ void* ConnectionThread::conn_routine(void* connectionThreadPtr) {
         nfds = select(max_fd+1, &listened_fdset, NULL, &exception_fdset, &timeout);
         if(nfds < 0){
             //TODO handle error
+            continue;
         }
         else if (nfds == 0)
             continue;
@@ -53,26 +56,37 @@ void* ConnectionThread::conn_routine(void* connectionThreadPtr) {
             //first check exception set on both, then read set on then, then ex on connections and at the end read on connection fds
             if(FD_ISSET(connTrd.console_fd, &exception_fdset)) {
                 //TODO handle console exceptions
+                --nfds;
             }
             if(FD_ISSET(connTrd.console_fd, &listened_fdset)) {
                 //TODO handle admin commands
+                --nfds;
             }
             if(FD_ISSET(connTrd.listenSock.getSockFd(), &exception_fdset)){
                 //TODO handle listenSock exceptions
+                --nfds;
             }
             if(FD_ISSET(connTrd.listenSock.getSockFd(), &listened_fdset)) {
                 connTrd.connCollector.enter();
                 connTrd.connCollector.addConnection(connTrd.listenSock);
+                --nfds;
                 connTrd.connCollector.leave();
             }
 
-            for (int fd : conn_fds) {
-                if (FD_ISSET(fd, &exception_fdset)) {
+            for (auto fd=conn_fds.begin() ; fd!=conn_fds.end() && nfds > 0 ; ++fd) {
+                if (FD_ISSET(*fd, &exception_fdset)) {
                     //TODO handle connection exceptions
+                    --nfds;
                 }
-                if(FD_ISSET(fd, &listened_fdset)) {
-                    connTrd.connCollector.readReceivedData(fd);
-                    //TODO daj znac wyzszej warstwie o tym, na jakim sockecie dostaniemy
+                if(FD_ISSET(*fd, &listened_fdset)) {
+                    connTrd.connCollector.readReceivedData(*fd);
+                    --nfds;
+                    connTrd.connCollector.sendData(*fd); //nie chcemy tego tutaj, bo polaczenie moze sie zakonczyc;
+                    // to, co chcemy, to oddelegowanie przeczytanych danych do wyzszej warstwy, takze dzialajacej na conncollectorze
+                    // warstwa taka wpierw by dane deserializowala(nie mamy tylko jeszcze zaimplementowanych takich mechanizmow)
+                    // potem przesylalaby do warstwy interpretujacej polecenia
+                    // na koniec ta powolalaby odpowiednie obiekty do pracy
+
                 }
             }
             //a moze powinienem tutaj dopiero wyjsc z collectora? w koncu bede operowal na polaczeniach, ktore moga zostac przerwane przez ten
@@ -92,6 +106,7 @@ int ConnectionThread::initListenedFdSet() {
 }
 
 void ConnectionThread::initListeningSocket(sockaddr_in server_addr) {
+    listenSock.initialize();
     listenSock.bind(server_addr);
     listenSock.listen(max_pending_conns);
     listenSock.setNonblocking(); //TODO co ze statusem

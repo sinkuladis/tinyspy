@@ -25,7 +25,7 @@ private:
 public:
     void initListeningSocket(sockaddr_in server_addr);
     ConnectionThread(int n_console_fd, int n_max_connections)
-        : console_fd(n_console_fd), max_pending_conns(n_max_connections)
+        : console_fd(n_console_fd), max_pending_conns(n_max_connections), listenSock(Socket())
         {}
         ConnectionCollector& getConnCollector() {return std::ref(connCollector);}
     void run();

@@ -11,9 +11,12 @@ class Socket {
 private:
     static const int BASIC_SLEEP = 3;
     int sock_fd;
+    int domain;
+    int type;
     sockaddr_in sock_addr;
 public:
-    Socket(int domain=AF_INET, int type=SOCK_STREAM);
+    Socket() : domain(-1), type(-1), sock_fd(-1) {}
+    Socket initialize(int domain=AF_INET, int type=SOCK_STREAM);
     void bind(sockaddr_in&);
     void listen(int);
     void shut();
@@ -24,7 +27,7 @@ public:
 
     int getSockFd() const;
     void connect();
-    Socket& accept(int new_sock_domain=AF_INET, int new_sock_type=SOCK_STREAM);
+    Socket accept(int new_sock_domain=AF_INET, int new_sock_type=SOCK_STREAM);
 };
 
 

@@ -6,10 +6,16 @@
 #include <iterator>
 #include "Connection.h"
 
-Connection::Connection(Socket nSock) : sock(nSock) {}
+Connection::Connection(Socket nSock) {
+    sock = nSock;
+}
 
 void Connection::readReceivedData() {
     int readbytes = sock.read(in_buffer);
     if(readbytes == 0)
         throw std::exception();
+}
+
+void Connection::writeDataToSend(char*data) {
+    int writtenbytes = sock.write(data);
 }

@@ -8,8 +8,10 @@
 #include <fcntl.h>
 #include <functional>
 
-Socket::Socket(int domain, int type) {
+//FIXME nie wywoluj sockedt() przy konstrukcji obiektu Socket, pobieraj file descriptor explicite
+Socket Socket::initialize(int domain, int type) {
     int currTry = 1;
+    this->domain = domain; this->type=type;
     do {
         sock_fd = socket( domain , type, 0 );
         if( sock_fd < 0 ) {
@@ -21,6 +23,7 @@ Socket::Socket(int domain, int type) {
     std::cout << "Socket created: " << sock_fd << std::endl;
 }
 
+//nie!!! wrzucac do destruktora
 void Socket::shut() { //albo w destruktorze
     std::cout << "Zamykanie socketu: " << sock_fd << std::endl;
     shutdown( sock_fd, SHUT_RDWR );
@@ -70,23 +73,27 @@ int Socket::read(void* buf, int nbytes) {
 
 int Socket::write(void* output) {
     //TODO write the whole output buffer to the socket
-    return 1;
+    int ret = ::write(sock_fd, output, sizeof(output));
+    return ret;
 }
 
 int Socket::getSockFd() const {
     return sock_fd;
 }
 
-Socket& Socket::accept(int new_sock_domain, int new_sock_type) {
-    Socket newSock(new_sock_domain, new_sock_type);
+Socket Socket::accept(int new_sock_domain, int new_sock_type) {
+    Socket newSock;
     socklen_t addr_len = sizeof( newSock.sock_addr );
     int new_sockfd = ::accept(sock_fd,( struct sockaddr * ) &newSock.sock_addr, &addr_len );
 
     if(new_sockfd <= 0 ) {
         //TODO error
-    }else
+    }else {
         newSock.sock_fd = new_sockfd;
-    return std::ref(newSock);
+        newSock.domain=new_sock_domain;
+        newSock.type=new_sock_type;
+    }
+    return newSock;
 }
 
 

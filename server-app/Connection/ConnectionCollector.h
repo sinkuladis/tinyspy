@@ -16,12 +16,8 @@
 class ConnectionCollector{
 private:
 
-    //std::unordered_map<int, Connection> connections;
-    std::
+    std::unordered_map<int, Connection&> connections;
     std::mutex mutex;
-
-    //int debdeb;
-    //std::vector<int> d_test;
 public:
     ConnectionCollector()=default;
 
@@ -29,7 +25,8 @@ public:
     std::vector<int> getConnectionDescriptors();
     void readReceivedData(Connection& conn);
     void readReceivedData(const int sock_fd);
-    Connection& at(const int sock_fd);
+    void sendData(Connection& conn);
+    void sendData(const int sock_fd);
     Connection& addConnection(Socket&);
     void enter() { mutex.lock(); }
     void leave() { mutex.unlock(); }

@@ -7,20 +7,10 @@
 #include "ConnectionCollector.h"
 
 Connection& ConnectionCollector::addConnection(Socket& listenSock) {
-    Socket& newSock = listenSock.accept(); //jesli bedzie potrzeba zapisac informacje o polaczeniu, bedzie mozna zrobic to tutaj i przekazac odpowiednia strukture adresu nowemu polaczeniu
-    bool ok;
+    Socket newSock = listenSock.accept(); //jesli bedzie potrzeba zapisac informacje o polaczeniu, bedzie mozna zrobic to tutaj i przekazac odpowiednia strukture adresu nowemu polaczeniu
     Connection* newConnect = new Connection(newSock);
-    ok = connections.insert( {newSock.getSockFd(), std::ref(*newConnect) } ).second;
-
-    //int i = 0;
-    //d_test.push_back(i);
-
+    bool ok = connections.insert( {newSock.getSockFd(), *newConnect } ).second; //if not ok socket was already in use though it shouldnt happen since its the os which assigns descriptors
     return std::ref(connections.at(newSock.getSockFd()));
-    //if not ok socket was already in use though it shouldnt happen since its the os which assigns descriptors
-}
-
-Connection &ConnectionCollector::at(const int sock_fd) {
-    return std::ref(connections.at(sock_fd));
 }
 
 void ConnectionCollector::readReceivedData(Connection &conn) {
@@ -51,4 +41,12 @@ std::vector<int> ConnectionCollector::getConnectionDescriptors() {
     for(auto& conn : connections)
         fdVec.push_back(conn.first);
     return fdVec;
+}
+
+void ConnectionCollector::sendData(Connection &conn) {
+    conn.writeDataToSend("Hi there");
+}
+
+void ConnectionCollector::sendData(const int sock_fd) {
+    sendData(connections.at(sock_fd));
 }

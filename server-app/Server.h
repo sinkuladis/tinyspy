@@ -17,7 +17,7 @@ private:
     sockaddr_in server_addr;
     int console_fd;
 public:
-    Server(int listening_port, int max_pend_conn, int nconsole_fd) : console_fd(nconsole_fd), connectionThread(console_fd, max_pend_conn), connCollector(std::ref(connectionThread.getConnCollector())) {
+    Server(int listening_port, int max_pend_conn, int nconsole_fd) : console_fd(nconsole_fd), connectionThread(nconsole_fd, max_pend_conn), connCollector(std::ref(connectionThread.getConnCollector())) {
         server_addr = {
                 .sin_family=AF_INET,
                 .sin_port=htons(listening_port)

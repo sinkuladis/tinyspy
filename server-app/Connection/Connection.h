@@ -20,7 +20,7 @@ public:
     ~Connection() { sock.shut(); }
 
     void readReceivedData();
-    void writeDataToSend();
+    void writeDataToSend(char*);
     void printMessage() {std::cout<<"Client "<<sock.getSockFd()<<" said "<< in_buffer<<std::endl;}
 
     Socket getSock() { return sock;}
