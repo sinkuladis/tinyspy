@@ -12,8 +12,6 @@ int main(int argc, char**argv) {
     int port = std::atoi(argv[1]);
     int max_connections = std::atoi(argv[2]);
 
-    Pipe consolePipe;
-
-    Server server(port, max_connections, consolePipe.getOutputFd());
+    Server server(port, max_connections);
     server.start();
 }

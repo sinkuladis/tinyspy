@@ -2,25 +2,27 @@
 // Created by zmus on 16/04/19.
 //
 
-#include<pthread.h>
+#include <pthread.h>
 #include "./ConnectionThread.h"
 #include "../Socket/Socket.h"
-#include<sys/select.h>
-#include<sys/types.h>
-#include<unistd.h>
-#include<sys/time.h>
+#include <sys/select.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/time.h>
 #include <functional>
-#include<algorithm>
+#include <algorithm>
 #include <thread>
 
 void ConnectionThread::run() {
-    /*TODO nalezy odrzucic wywolanie, jesli thread juz dziala, z racji bezpieczenstwa
-    moze byc kilka obiektow ConnectionThread, ale ta metoda moze byyc odpalona tylko raz, az skonczy sie ostatni thread - mutex trylock?*/
     run_mutex.lock();
     pthread_create(&thread_id, NULL, conn_routine, this);
+}
+
+void ConnectionThread::join() {
     pthread_join(thread_id, NULL);
     run_mutex.unlock();
 }
+
 
 void* ConnectionThread::conn_routine(void* connectionThreadPtr) {
     ConnectionThread* ctptr = (ConnectionThread*)connectionThreadPtr; //TODO co jesli obiekt zostanie w tej chwili realokowany? -> musisz przekazac wskaznik na strukture, w ktorej polem bedzie referencja na obiekt
@@ -38,11 +40,11 @@ void* ConnectionThread::conn_routine(void* connectionThreadPtr) {
             .tv_sec = 10,
             .tv_usec = 0
         };
-        FD_ZERO(&connTrd.listened_fds); FD_ZERO(&exception_fdset);
+
         connTrd.connCollector.enter();
         max_fd = connTrd.initListenedFdSet();
         std::vector<int> conn_fds = connTrd.connCollector.getConnectionDescriptors();
-        connTrd.connCollector.leave(); // czy jednak po dodaniu?
+        FD_ZERO(&exception_fdset);
         exception_fdset = listened_fdset;
 
         nfds = select(max_fd+1, &listened_fdset, NULL, &exception_fdset, &timeout);
@@ -67,10 +69,8 @@ void* ConnectionThread::conn_routine(void* connectionThreadPtr) {
                 --nfds;
             }
             if(FD_ISSET(connTrd.listenSock.getSockFd(), &listened_fdset)) {
-                connTrd.connCollector.enter();
                 connTrd.connCollector.addConnection(connTrd.listenSock);
                 --nfds;
-                connTrd.connCollector.leave();
             }
 
             for (auto fd=conn_fds.begin() ; fd!=conn_fds.end() && nfds > 0 ; ++fd) {
@@ -79,18 +79,22 @@ void* ConnectionThread::conn_routine(void* connectionThreadPtr) {
                     --nfds;
                 }
                 if(FD_ISSET(*fd, &listened_fdset)) {
+                    //write the number of fd that refers to the connection from which the data is supposed to be read
+                    //figure out a way to insert an integer into a void* and mae it a method in pipe
+                    executorPipe.write()
                     connTrd.connCollector.readReceivedData(*fd);
                     --nfds;
-                    connTrd.connCollector.sendData(*fd); //nie chcemy tego tutaj, bo polaczenie moze sie zakonczyc;
+                    connTrd.connCollector.sendData(*fd);
+                    //nie chcemy tego tutaj, bo polaczenie moze sie zakonczyc;
                     // to, co chcemy, to oddelegowanie przeczytanych danych do wyzszej warstwy, takze dzialajacej na conncollectorze
                     // warstwa taka wpierw by dane deserializowala(nie mamy tylko jeszcze zaimplementowanych takich mechanizmow)
                     // potem przesylalaby do warstwy interpretujacej polecenia
                     // na koniec ta powolalaby odpowiednie obiekty do pracy
+                    //zarzadzanie polaczeniami tez jest w jej kwestii; tym bardziej odpowiedzi klientom
 
                 }
             }
-            //a moze powinienem tutaj dopiero wyjsc z collectora? w koncu bede operowal na polaczeniach, ktore moga zostac przerwane przez ten
-
+            connTrd.connCollector.leave();//jesli administrator wyda polecenie odrzucenia danego klienta w innym watku, to nie mozemy konczyc polaczenia w trakcie jego obslugi, stad wychodzimy z moitora dopiero tutaj
         }
 
     }
@@ -98,11 +102,17 @@ void* ConnectionThread::conn_routine(void* connectionThreadPtr) {
 }
 
 int ConnectionThread::initListenedFdSet() {
+
+    FD_ZERO(&listened_fds);
     int max_fd = connCollector.getConnectionsFdSet(&listened_fds);
     int listen_sock_fd = listenSock.getSockFd();
+
     FD_SET(listen_sock_fd, &listened_fds);
     FD_SET(console_fd, &listened_fds);
-    return std::max({max_fd, listen_sock_fd, console_fd});
+
+    max_fd = std::max({max_fd, listen_sock_fd, console_fd});
+
+    return max_fd;
 }
 
 void ConnectionThread::initListeningSocket(sockaddr_in server_addr) {

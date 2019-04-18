@@ -9,13 +9,16 @@
 #include <functional>
 #include "../Connection/ConnectionCollector.h"
 #include "../Socket/Socket.h"
+#include "../Pipes/Pipe.h"
 
 class ConnectionThread {
 private:
-    ConnectionCollector connCollector;
+    ConnectionCollector& connCollector;
     Socket listenSock;
     fd_set listened_fds;
-    int console_fd;
+    //int console_fd;
+    Pipe& consolePipe;
+    Pipe& executorPipe;
     int max_pending_conns;
     pthread_t thread_id;
     std::mutex run_mutex;
@@ -24,11 +27,11 @@ private:
 
 public:
     void initListeningSocket(sockaddr_in server_addr);
-    ConnectionThread(int n_console_fd, int n_max_connections)
-        : console_fd(n_console_fd), max_pending_conns(n_max_connections), listenSock(Socket())
+    ConnectionThread(Pipe& nConsolePipe, Pipe& nExecutorPipe, int n_max_connections, ConnectionCollector& newConnColl)
+        : consolePipe(nConsolePipe), executorPipe(nExecutorPipe), max_pending_conns(n_max_connections), listenSock(Socket()), connCollector(newConnColl)
         {}
-        ConnectionCollector& getConnCollector() {return std::ref(connCollector);}
     void run();
+    void join();
 };
 
 

@@ -9,15 +9,32 @@
 #include <netinet/in.h>
 #include <functional>
 #include "Thread/ConnectionThread.h"
+#include "Pipes/Pipe.h"
+#include "Execution/Executor.h"
 
 class Server {
 private:
+    Pipe consoleToConnectionPipe;
+    //Pipe connectionToSerializerPipe;
+    //Pipe serializerToExecutorPipe;
+    Pipe connectionToExecutorPipe;
     ConnectionThread connectionThread;
-    ConnectionCollector& connCollector;
+    ConnectionCollector connCollector;
+
+    //Serializer serializer;
+    Executor executor;
+
     sockaddr_in server_addr;
-    int console_fd;
 public:
-    Server(int listening_port, int max_pend_conn, int nconsole_fd) : console_fd(nconsole_fd), connectionThread(nconsole_fd, max_pend_conn), connCollector(std::ref(connectionThread.getConnCollector())) {
+    Server(int listening_port, int max_pend_conn)
+        : consoleToConnectionPipe(),
+          //connectionToSerializerPipe(),
+          //serializerToExecutorPipe(),
+          connectionToExecutorPipe(),
+          connCollector(),
+          connectionThread( std::ref(consoleToConnectionPipe), std::ref(connectionToExecutionPipe) , max_pend_conn, std::ref(connCollector)),
+          executor()
+    {
         server_addr = {
                 .sin_family=AF_INET,
                 .sin_port=htons(listening_port)
