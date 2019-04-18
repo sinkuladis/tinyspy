@@ -31,5 +31,13 @@ int Pipe::getOutputFd()
     return output;
 }
 
+std::string Pipe::read(int nbytes) {
+    char buf[1024];
+    int ret = ::read(output, buf, nbytes);
+    return std::string(buf);
+}
 
-
+int Pipe::write(char*  data) {
+    int ret = ::write(input, data, sizeof(data));
+    return ret;
+}
