@@ -13,8 +13,10 @@ public:
     Pipe();
     int getInputFd();
     int getOutputFd();
-    std::string read(int nbytes=1024);
+    int write(int fd);
     int write(char*);
+    std::string read(int nbytes);
+    int readConnNo();
 };
 
 #endif // PIPE_H

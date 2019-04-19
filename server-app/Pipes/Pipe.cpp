@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <stdexcept>
 #include <fcntl.h>
+#include <cstring>
 
 Pipe::Pipe()
 {
@@ -40,4 +41,17 @@ std::string Pipe::read(int nbytes) {
 int Pipe::write(char*  data) {
     int ret = ::write(input, data, sizeof(data));
     return ret;
+}
+
+int Pipe::write(int fd) {
+    char data[1024];
+    memcpy(data, &fd, sizeof(fd));
+    write(data);
+}
+
+int Pipe::readConnNo() {
+    int conn_no=-1;
+    std::string read = this->read(sizeof(conn_no));
+    memcpy(&conn_no, read.data(), sizeof(conn_no));
+    return conn_no;
 }
