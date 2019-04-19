@@ -16,7 +16,6 @@ private:
     ConnectionCollector& connCollector;
     Socket listenSock;
     fd_set listened_fds;
-    //int console_fd;
     Pipe& consolePipe;
     Pipe& executorPipe;
     int max_pending_conns;

@@ -32,35 +32,36 @@ void* ConnectionThread::conn_routine(void* connectionThreadPtr) {
     fd_set& listened_fdset = std::ref(connTrd.listened_fds);
 
     int nfds, max_fd;
-
+    std::vector<int> conn_fds;
     struct timeval timeout;
     bool still_listening = true;
     while(still_listening) {
         timeout = {
-            .tv_sec = 10,
+            .tv_sec = 2,
             .tv_usec = 0
         };
 
         connTrd.connCollector.enter();
         max_fd = connTrd.initListenedFdSet();
-        std::vector<int> conn_fds = connTrd.connCollector.getConnectionDescriptors();
+        conn_fds = connTrd.connCollector.getConnectionDescriptors();
         FD_ZERO(&exception_fdset);
         exception_fdset = listened_fdset;
 
         nfds = select(max_fd+1, &listened_fdset, NULL, &exception_fdset, &timeout);
         if(nfds < 0){
             //TODO handle error
-            continue;
+
         }
-        else if (nfds == 0)
-            continue;
+        else if (nfds == 0){
+
+        }
         else{
             //first check exception set on both, then read set on then, then ex on connections and at the end read on connection fds
-            if(FD_ISSET(connTrd.console_fd, &exception_fdset)) {
+            if(FD_ISSET(connTrd.consolePipe.getOutputFd(), &exception_fdset)) {
                 //TODO handle console exceptions
                 --nfds;
             }
-            if(FD_ISSET(connTrd.console_fd, &listened_fdset)) {
+            if(FD_ISSET(connTrd.consolePipe.getOutputFd(), &listened_fdset)) {
                 //TODO handle admin commands
                 --nfds;
             }
@@ -79,12 +80,10 @@ void* ConnectionThread::conn_routine(void* connectionThreadPtr) {
                     --nfds;
                 }
                 if(FD_ISSET(*fd, &listened_fdset)) {
-                    //write the number of fd that refers to the connection from which the data is supposed to be read
-                    //figure out a way to insert an integer into a void* and mae it a method in pipe
-                    executorPipe.write()
                     connTrd.connCollector.readReceivedData(*fd);
+                    connTrd.executorPipe.write(*fd);
                     --nfds;
-                    connTrd.connCollector.sendData(*fd);
+                    //connTrd.connCollector.sendData(*fd);
                     //nie chcemy tego tutaj, bo polaczenie moze sie zakonczyc;
                     // to, co chcemy, to oddelegowanie przeczytanych danych do wyzszej warstwy, takze dzialajacej na conncollectorze
                     // warstwa taka wpierw by dane deserializowala(nie mamy tylko jeszcze zaimplementowanych takich mechanizmow)
@@ -94,9 +93,8 @@ void* ConnectionThread::conn_routine(void* connectionThreadPtr) {
 
                 }
             }
-            connTrd.connCollector.leave();//jesli administrator wyda polecenie odrzucenia danego klienta w innym watku, to nie mozemy konczyc polaczenia w trakcie jego obslugi, stad wychodzimy z moitora dopiero tutaj
         }
-
+        connTrd.connCollector.leave();//jesli administrator wyda polecenie odrzucenia danego klienta w innym watku, to nie mozemy konczyc polaczenia w trakcie jego obslugi, stad wychodzimy z moitora dopiero tutaj
     }
     return nullptr;
 }
@@ -106,7 +104,7 @@ int ConnectionThread::initListenedFdSet() {
     FD_ZERO(&listened_fds);
     int max_fd = connCollector.getConnectionsFdSet(&listened_fds);
     int listen_sock_fd = listenSock.getSockFd();
-
+    int console_fd = consolePipe.getOutputFd();
     FD_SET(listen_sock_fd, &listened_fds);
     FD_SET(console_fd, &listened_fds);
 
