@@ -10,4 +10,5 @@ add_executable(Server.out server-app/main.cpp
         server-app/Connection/Connection.h server-app/Connection/Connection.cpp
         server-app/Connection/ConnectionCollector.h server-app/Connection/ConnectionCollector.cpp
         server-app/Thread/ConnectionThread.h server-app/Thread/ConnectionThread.cpp
-        server-app/Server.h server-app/Server.cpp server-app/Delegation/Delegator.cpp server-app/Delegation/Delegator.h server-app/Thread/DelegationThread.cpp server-app/Thread/DelegationThread.h server-app/Execution/Executor.cpp server-app/Execution/Executor.h)
+        server-app/Server.h server-app/Server.cpp
+        server-app/Thread/ExecutorThread.cpp server-app/Thread/ExecutorThread.h)
