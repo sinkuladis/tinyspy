@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include "./ConnectionThread.h"
 #include "../Socket/Socket.h"
+#include "../Exception/ConnectionTerminationException.h"
 #include <sys/select.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -37,13 +38,19 @@ void* ConnectionThread::conn_routine(void* connectionThreadPtr) {
     bool still_listening = true;
     while(still_listening) {
         timeout = {
-            .tv_sec = 2,
+            .tv_sec = 10,
             .tv_usec = 0
         };
 
         connTrd.connCollector.enter();
+        std::cout<< " conn entered\n";
+
         max_fd = connTrd.initListenedFdSet();
         conn_fds = connTrd.connCollector.getConnectionDescriptors();
+
+        std::cout<< " conn left\n";
+        connTrd.connCollector.leave();
+
         FD_ZERO(&exception_fdset);
         exception_fdset = listened_fdset;
 
@@ -73,15 +80,22 @@ void* ConnectionThread::conn_routine(void* connectionThreadPtr) {
                 connTrd.connCollector.addConnection(connTrd.listenSock);
                 --nfds;
             }
-
+            //std::cout<<"enter loop"<<std::endl;
             for (auto fd=conn_fds.begin() ; fd!=conn_fds.end() && nfds > 0 ; ++fd) {
                 if (FD_ISSET(*fd, &exception_fdset)) {
                     //TODO handle connection exceptions
                     --nfds;
                 }
                 if(FD_ISSET(*fd, &listened_fdset)) {
-                    connTrd.connCollector.readReceivedData(*fd);
-                    connTrd.executorPipe.write(*fd);
+
+                    int conn_id = *fd;
+                    connTrd.connCollector.enter();
+                    std::cout<< " conn entered to read\n";
+                    connTrd.connCollector.readReceivedData(conn_id);
+                    std::cout<< " conn left reading\n";
+                    connTrd.executorPipe.writeInt(conn_id);
+                    std::cout<<"exe thread was notified of"<< conn_id<<std::endl;
+                    connTrd.connCollector.leave();
                     --nfds;
                     //connTrd.connCollector.sendData(*fd);
                     //nie chcemy tego tutaj, bo polaczenie moze sie zakonczyc;
@@ -94,7 +108,8 @@ void* ConnectionThread::conn_routine(void* connectionThreadPtr) {
                 }
             }
         }
-        connTrd.connCollector.leave();//jesli administrator wyda polecenie odrzucenia danego klienta w innym watku, to nie mozemy konczyc polaczenia w trakcie jego obslugi, stad wychodzimy z moitora dopiero tutaj
+        //jesli administrator wyda polecenie odrzucenia danego klienta w innym watku, to nie mozemy konczyc polaczenia w trakcie jego obslugi, stad wychodzimy z moitora dopiero tutaj
+        sleep(3); //bez tego connection thread jest za szybki i nie wpuszcza executora do conncollectora XD
     }
     return nullptr;
 }
