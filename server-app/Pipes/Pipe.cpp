@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <fcntl.h>
 #include <cstring>
+#include <iostream>
 
 Pipe::Pipe()
 {
@@ -31,27 +32,32 @@ int Pipe::getOutputFd()
 {
     return output;
 }
-
+//FIXME
 std::string Pipe::read(int nbytes) {
-    char buf[1024];
-    int ret = ::read(output, buf, nbytes);
-    return std::string(buf);
-}
+    char* buf = (char*) calloc(nbytes, 1);
 
+    int ret = ::read(output, buf, nbytes);
+
+    std::string deb(buf);
+    free(buf);
+    return deb;
+}
+//FIXME
 int Pipe::write(char*  data) {
     int ret = ::write(input, data, sizeof(data));
     return ret;
 }
 
-int Pipe::write(int fd) {
-    char data[1024];
-    memcpy(data, &fd, sizeof(fd));
-    write(data);
+int Pipe::writeInt(int id) {
+    int nbytes = ::write(input, &fd, sizeof(int));
+    return nbytes;
 }
 
-int Pipe::readConnNo() {
+int Pipe::readInt() {
     int conn_no=-1;
-    std::string read = this->read(sizeof(conn_no));
-    memcpy(&conn_no, read.data(), sizeof(conn_no));
+    int nbytes = ::read(output, &conn_no, sizeof(int));
+    if(nbytes < 0){
+
+    }
     return conn_no;
 }
