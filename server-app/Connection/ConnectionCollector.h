@@ -28,6 +28,8 @@ public:
     void sendData(Connection& conn);
     void sendData(const int sock_fd);
     Connection& addConnection(Socket&);
+    Connection& at(int conn_id) {return std::ref(connections.at(conn_id));}
+    void removeConnection(int);
     void enter() { mutex.lock(); }
     void leave() { mutex.unlock(); }
 };
