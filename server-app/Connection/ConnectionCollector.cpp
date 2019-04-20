@@ -5,7 +5,6 @@
 #include <functional>
 #include <sys/select.h>
 #include "ConnectionCollector.h"
-#include "../Exception/ConnectionTerminationException.h"
 
 Connection& ConnectionCollector::addConnection(Socket& listenSock) {
     Socket newSock = listenSock.accept(); //jesli bedzie potrzeba zapisac informacje o polaczeniu, bedzie mozna zrobic to tutaj i przekazac odpowiednia strukture adresu nowemu polaczeniu

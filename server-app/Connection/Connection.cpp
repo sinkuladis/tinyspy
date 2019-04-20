@@ -5,7 +5,6 @@
 #include <cstdlib>
 #include <iterator>
 #include "Connection.h"
-#include "../Exception/ConnectionTerminationException.h"
 
 Connection::Connection(Socket nSock) {
     sock = nSock;

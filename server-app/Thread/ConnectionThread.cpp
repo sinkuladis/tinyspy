@@ -5,7 +5,6 @@
 #include <pthread.h>
 #include "./ConnectionThread.h"
 #include "../Socket/Socket.h"
-#include "../Exception/ConnectionTerminationException.h"
 #include <sys/select.h>
 #include <sys/types.h>
 #include <unistd.h>
