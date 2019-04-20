@@ -65,16 +65,29 @@ void Socket::listen(int max_connections) {
     std::cout << "Listening." << std::endl;
 }
 
-int Socket::read(void* buf, int nbytes) {
-    //TODO read nbytes; if 0 -> break loop and ret 0
-    int ret = ::read(sock_fd, buf, nbytes);
-    return ret;
+int Socket::read(char *buf, int nbytes) {
+    int offs=0, read_bytes=0;
+    while(nbytes > 0) {
+        read_bytes = ::read(sock_fd, buf + offs, nbytes);
+
+        if(read_bytes == 0)
+            break;
+
+        offs+=read_bytes;
+        nbytes-=read_bytes;
+    }
+    return offs;
 }
 
-int Socket::write(void* output) {
-    //TODO write the whole output buffer to the socket
-    int ret = ::write(sock_fd, output, sizeof(output));
-    return ret;
+int Socket::write(char *output, int nbytes) {
+    int written_bytes=0, offs=0;
+    while(nbytes > 0) {
+        written_bytes = ::write(sock_fd, output + offs, nbytes);
+
+        offs+=written_bytes;
+        nbytes-=written_bytes;
+    }
+    return offs;
 }
 
 int Socket::getSockFd() const {
