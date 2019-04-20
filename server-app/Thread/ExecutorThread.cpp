@@ -2,10 +2,10 @@
 // Created by zmus on 18/04/19.
 //
 #include "ExecutorThread.h"
-#include<sys/select.h>
+#include <sys/select.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include<algorithm>
+#include <algorithm>
 
 //powinno dzialac w oddzielnym threadzie - mainExecutorThread
 
@@ -41,17 +41,19 @@ void ExecutorThread::listenOnPipe() {
         }
 
         if ( FD_ISSET(connectionPipe.getOutputFd(), &listened_pipes) ) {
-            //TODO handle connection; do I handle it in defferent thread? or do i just handle it here? I think I should start a new thread...
-            std::cout<<"executor read: "<<connectionPipe.readConnNo()<<std::endl;
+            pthread_t* new_thread = new pthread_t;
+            pthread_create(new_thread, NULL, &ExecutorThread::handleConnection, this);
         }
     }
 }
 
 void ExecutorThread::initFdSets() {
     FD_ZERO(&listened_pipes);
+    FD_ZERO(&exception_pipes);
     FD_SET(connectionPipe.getOutputFd(), &listened_pipes);
     FD_SET(consolePipe.getOutputFd(), &listened_pipes);
-    exception_pipes = listened_pipes;
+    FD_SET(connectionPipe.getOutputFd(), &exception_pipes);
+    FD_SET(consolePipe.getOutputFd(), &exception_pipes);
 }
 
 void ExecutorThread::run() {
@@ -62,3 +64,43 @@ void ExecutorThread::join() {
     mainThread.join();
 }
 
+/*
+ * W tym miejscu bedziemy w finalnej wersji programu zapewne odbierac informacji o polaczeniu do obsluzenia
+ * nastepnie bedziemy musieli zlecic deserializacje danych odebranych od polaczenia przekazanego przez pipeline od ConnectionThreada
+ * skolejkowac zdeserializowane dane jako obiekty typu request prosto do kolejki requestow obiektu connection
+ * zasygnalizowac jakiemus RequestHandlerowi poprzez pipeline gotowosc do dzialania i niech on juz sie tym dalej zajmuje
+ *
+ * trzeba bedzie jedynie dodac kilka pipeline'ow i przekazac je do kolejnych obiektow threadow przy tworzeniu tychze threadow - wiec
+ * modulowosc mamy zapewniona
+*/
+ void* ExecutorThread::handleConnection(void* exe_trd_ptr) {
+    ExecutorThread& exe = *((ExecutorThread*)exe_trd_ptr); //pthready sa piekne
+    ConnectionCollector& connCollector = exe.connCollector;
+    Pipe& connectionPipe = exe.connectionPipe;
+
+     std::cout<<"Handle connection was called\n";
+     int conn_id = connectionPipe.readInt();
+     if(conn_id < 0) {
+         std::cout << "nothing to read on the connectionPipe " << std::endl;
+         pthread_exit(0);
+     }
+
+     std::cout<<"exe read"<<conn_id<<std::endl;
+     connCollector.enter();
+     std::cout<<"exe entered\n";
+
+     Connection& conn = connCollector.at(conn_id);
+     Request req = conn.getNextRequest();
+
+     switch (req.getCode()){
+         case ANSW:
+             conn.mockAnswer();
+             break;
+         case TERM:
+             connCollector.removeConnection(conn_id);
+             break;
+     }
+
+     std::cout<<"exe left\n";
+     connCollector.leave();
+}

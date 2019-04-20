@@ -17,17 +17,16 @@ private:
     std::thread mainThread;
     fd_set listened_pipes;
     fd_set exception_pipes;
-    std::vector<pthread_t> executionThreads;
 public:
     ExecutorThread(Pipe& nConnectionPipe, Pipe& nConsolePipe, ConnectionCollector& nConnCollector)
         : connectionPipe(nConnectionPipe),
         consolePipe(nConsolePipe),
-        connCollector(nConnCollector),
-        executionThreads()
+        connCollector(nConnCollector)
     {}
     void listenOnPipe();
     void run();
     void join();
+    static void* handleConnection(void*);
     void initFdSets();
 };
 
