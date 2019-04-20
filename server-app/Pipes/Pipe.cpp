@@ -35,7 +35,6 @@ int Pipe::getOutputFd()
 //FIXME
 std::string Pipe::read(int nbytes) {
     char* buf = (char*) calloc(nbytes, 1);
-
     int ret = ::read(output, buf, nbytes);
 
     std::string deb(buf);
@@ -49,15 +48,14 @@ int Pipe::write(char*  data) {
 }
 
 int Pipe::writeInt(int id) {
-    int nbytes = ::write(input, &fd, sizeof(int));
+    int nbytes = ::write(input, &id, sizeof(int));
     return nbytes;
 }
 
 int Pipe::readInt() {
     int conn_no=-1;
     int nbytes = ::read(output, &conn_no, sizeof(int));
-    if(nbytes < 0){
-
-    }
+    if (nbytes < 0)
+        return -1 * abs(errno);
     return conn_no;
 }
