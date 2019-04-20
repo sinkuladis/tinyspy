@@ -11,4 +11,6 @@ add_executable(Server.out server-app/main.cpp
         server-app/Connection/ConnectionCollector.h server-app/Connection/ConnectionCollector.cpp
         server-app/Thread/ConnectionThread.h server-app/Thread/ConnectionThread.cpp
         server-app/Server.h server-app/Server.cpp
-        server-app/Thread/ExecutorThread.cpp server-app/Thread/ExecutorThread.h server-app/Exception/ConnectionException.cpp server-app/Exception/ConnectionException.h server-app/Exception/ConnectionTerminationException.cpp server-app/Exception/ConnectionTerminationException.h server-app/Request/Request.cpp server-app/Request/Request.h server-app/Request/RequestCode.cpp server-app/Request/RequestCode.h)
+        server-app/Thread/ExecutorThread.cpp server-app/Thread/ExecutorThread.h
+        server-app/Request/Request.cpp server-app/Request/Request.h
+        server-app/Request/RequestCode.cpp server-app/Request/RequestCode.h)
