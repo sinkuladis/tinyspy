@@ -9,28 +9,32 @@
 #include <functional>
 #include "../Connection/ConnectionCollector.h"
 #include "../Socket/Socket.h"
-#include "../Pipes/Pipe.h"
+#include "Thread.h"
 
-class ConnectionThread {
+class ConnectionThread : public Thread {
 private:
     ConnectionCollector& connCollector;
     Socket listenSock;
-    fd_set listened_fds;
-    Pipe& consolePipe;
+    fd_set listened_fdset;
+    fd_set exception_fdset;
     Pipe& executorPipe;
     int max_pending_conns;
-    pthread_t thread_id;
     std::mutex run_mutex;
     static void* conn_routine(void*);
-    int initListenedFdSet();
+    int initFdSets();
 
 public:
     void initListeningSocket(sockaddr_in server_addr);
     ConnectionThread(Pipe& nConsolePipe, Pipe& nExecutorPipe, int n_max_connections, ConnectionCollector& newConnColl)
-        : consolePipe(nConsolePipe), executorPipe(nExecutorPipe), max_pending_conns(n_max_connections), listenSock(Socket()), connCollector(newConnColl)
+        : Thread(nConsolePipe),
+        executorPipe(nExecutorPipe),
+        max_pending_conns(n_max_connections),
+        listenSock(Socket()),
+        connCollector(newConnColl)
         {}
-    void run();
-    void join();
+
+    void run() override;
+    void join() override;
 };
 
 

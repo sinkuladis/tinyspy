@@ -6,28 +6,29 @@
 #define TINYSPY_EXECUTORTHREAD_H
 
 #include<thread>
+#include "Thread.h"
 #include "../Connection/ConnectionCollector.h"
-#include "../Pipes/Pipe.h"
 
-class ExecutorThread {
+class ExecutorThread : public Thread {
 private:
     ConnectionCollector& connCollector;
     Pipe& connectionPipe;
-    Pipe& consolePipe;
     std::thread mainThread;
     fd_set listened_pipes;
     fd_set exception_pipes;
+
 public:
     ExecutorThread(Pipe& nConnectionPipe, Pipe& nConsolePipe, ConnectionCollector& nConnCollector)
-        : connectionPipe(nConnectionPipe),
-        consolePipe(nConsolePipe),
+        : Thread(nConsolePipe),
+        connectionPipe(nConnectionPipe),
         connCollector(nConnCollector)
     {}
-    void listenOnPipe();
-    void run();
-    void join();
-    static void* handleConnection(void*);
+    void listenForRequests();
+    void handleRequest(); //main routine
     void initFdSets();
+
+    void run() override;
+    void join() override;
 };
 
 

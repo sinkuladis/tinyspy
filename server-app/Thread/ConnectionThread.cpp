@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include "./ConnectionThread.h"
 #include "../Socket/Socket.h"
+#include "../Console/CommandCode.h"
 #include <sys/select.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -15,6 +16,7 @@
 
 void ConnectionThread::run() {
     run_mutex.lock();
+    running = true;
     pthread_create(&thread_id, NULL, conn_routine, this);
 }
 
@@ -25,35 +27,35 @@ void ConnectionThread::join() {
 
 
 void* ConnectionThread::conn_routine(void* connectionThreadPtr) {
-    ConnectionThread* ctptr = (ConnectionThread*)connectionThreadPtr; //TODO co jesli obiekt zostanie w tej chwili realokowany? -> musisz przekazac wskaznik na strukture, w ktorej polem bedzie referencja na obiekt
-    ConnectionThread &connTrd = *ctptr;
-
-    fd_set exception_fdset;
-    fd_set& listened_fdset = std::ref(connTrd.listened_fds);
+    //to jest prawdziwe piękno pthreadów. static na konkretnym obiekcie
+    ConnectionThread &connTrd = *((ConnectionThread*)connectionThreadPtr); //TODO co jesli obiekt zostanie w tej chwili realokowany? -> musisz przekazac wskaznik na strukture, w ktorej polem bedzie referencja na obiekt
+    ConnectionCollector& connCollector = connTrd.connCollector;
+    Pipe& executorPipe = connTrd.executorPipe;
+    Pipe& consolePipe = connTrd.consolePipe;
+    Socket& listenSock = connTrd.listenSock;
+    fd_set& listened_fdset = std::ref(connTrd.listened_fdset);
+    fd_set& exception_fdset = std::ref(connTrd.exception_fdset);
 
     int nfds, max_fd;
     std::vector<int> conn_fds;
     struct timeval timeout;
-    bool still_listening = true;
-    while(still_listening) {
+    while(connTrd.running) {
         timeout = {
             .tv_sec = 10,
             .tv_usec = 0
         };
 
-        connTrd.connCollector.enter();
-        std::cout<< " conn entered\n";
+        connCollector.enter();
+        //std::cout<< " conn entered\n";
 
-        max_fd = connTrd.initListenedFdSet();
-        conn_fds = connTrd.connCollector.getConnectionDescriptors();
+        max_fd = connTrd.initFdSets();
+        conn_fds = connCollector.getConnectionDescriptors();
 
-        std::cout<< " conn left\n";
-        connTrd.connCollector.leave();
-
-        FD_ZERO(&exception_fdset);
-        exception_fdset = listened_fdset;
+//        std::cout<< " conn left\n";
+        connCollector.leave();
 
         nfds = select(max_fd+1, &listened_fdset, NULL, &exception_fdset, &timeout);
+        std::cout<<"select returned "<<nfds<<std::endl;
         if(nfds < 0){
             //TODO handle error
 
@@ -63,20 +65,23 @@ void* ConnectionThread::conn_routine(void* connectionThreadPtr) {
         }
         else{
             //first check exception set on both, then read set on then, then ex on connections and at the end read on connection fds
-            if(FD_ISSET(connTrd.consolePipe.getOutputFd(), &exception_fdset)) {
+            if(FD_ISSET(consolePipe.getOutputFd(), &exception_fdset)) {
                 //TODO handle console exceptions
                 --nfds;
             }
-            if(FD_ISSET(connTrd.consolePipe.getOutputFd(), &listened_fdset)) {
-                //TODO handle admin commands
+            if(FD_ISSET(consolePipe.getOutputFd(), &listened_fdset)) {
                 --nfds;
+                int command = consolePipe.readInt();
+                connTrd.runCommand(command);
+                if(!connTrd.running)
+                    break;
             }
-            if(FD_ISSET(connTrd.listenSock.getSockFd(), &exception_fdset)){
+            if(FD_ISSET(listenSock.getSockFd(), &exception_fdset)){
                 //TODO handle listenSock exceptions
                 --nfds;
             }
-            if(FD_ISSET(connTrd.listenSock.getSockFd(), &listened_fdset)) {
-                connTrd.connCollector.addConnection(connTrd.listenSock);
+            if(FD_ISSET(listenSock.getSockFd(), &listened_fdset)) {
+                connCollector.addConnection(listenSock);
                 --nfds;
             }
             //std::cout<<"enter loop"<<std::endl;
@@ -88,39 +93,37 @@ void* ConnectionThread::conn_routine(void* connectionThreadPtr) {
                 if(FD_ISSET(*fd, &listened_fdset)) {
 
                     int conn_id = *fd;
-                    connTrd.connCollector.enter();
-                    std::cout<< " conn entered to read\n";
-                    connTrd.connCollector.readReceivedData(conn_id);
-                    std::cout<< " conn left reading\n";
-                    connTrd.executorPipe.writeInt(conn_id);
+                    connCollector.enter();
+  //                  std::cout<< " conn entered to read\n";
+                    connCollector.readReceivedData(conn_id);
+    //                std::cout<< " conn left reading\n";
+                    executorPipe.writeInt(conn_id);
                     std::cout<<"exe thread was notified of"<< conn_id<<std::endl;
-                    connTrd.connCollector.leave();
+                    connCollector.leave();
                     --nfds;
-                    //connTrd.connCollector.sendData(*fd);
-                    //nie chcemy tego tutaj, bo polaczenie moze sie zakonczyc;
-                    // to, co chcemy, to oddelegowanie przeczytanych danych do wyzszej warstwy, takze dzialajacej na conncollectorze
-                    // warstwa taka wpierw by dane deserializowala(nie mamy tylko jeszcze zaimplementowanych takich mechanizmow)
-                    // potem przesylalaby do warstwy interpretujacej polecenia
-                    // na koniec ta powolalaby odpowiednie obiekty do pracy
-                    //zarzadzanie polaczeniami tez jest w jej kwestii; tym bardziej odpowiedzi klientom
-
                 }
             }
         }
         //jesli administrator wyda polecenie odrzucenia danego klienta w innym watku, to nie mozemy konczyc polaczenia w trakcie jego obslugi, stad wychodzimy z moitora dopiero tutaj
         sleep(3); //bez tego connection thread jest za szybki i nie wpuszcza executora do conncollectora XD
     }
+    std::cout<<"Connection thread exited"<<std::endl;
     return nullptr;
 }
 
-int ConnectionThread::initListenedFdSet() {
+int ConnectionThread::initFdSets() {
 
-    FD_ZERO(&listened_fds);
-    int max_fd = connCollector.getConnectionsFdSet(&listened_fds);
+    FD_ZERO(&listened_fdset);
+    FD_ZERO(&exception_fdset);
+
+    int max_fd = connCollector.getConnectionsFdSet(&listened_fdset);
+    connCollector.getConnectionsFdSet(&exception_fdset);
+
     int listen_sock_fd = listenSock.getSockFd();
     int console_fd = consolePipe.getOutputFd();
-    FD_SET(listen_sock_fd, &listened_fds);
-    FD_SET(console_fd, &listened_fds);
+
+    FD_SET(listen_sock_fd, &listened_fdset);
+    FD_SET(console_fd, &listened_fdset);
 
     max_fd = std::max({max_fd, listen_sock_fd, console_fd});
 
@@ -133,3 +136,4 @@ void ConnectionThread::initListeningSocket(sockaddr_in server_addr) {
     listenSock.listen(max_pending_conns);
     listenSock.setNonblocking(); //TODO co ze statusem
 }
+

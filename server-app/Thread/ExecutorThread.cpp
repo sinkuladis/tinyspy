@@ -2,15 +2,14 @@
 // Created by zmus on 18/04/19.
 //
 #include "ExecutorThread.h"
+#include "../Console/CommandCode.h"
 #include <sys/select.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <algorithm>
+#include <pthread.h>
 
-//powinno dzialac w oddzielnym threadzie - mainExecutorThread
-
-void ExecutorThread::listenOnPipe() {
-    bool running=true;
+void ExecutorThread::listenForRequests() {
     int n_ready_fd;
     int max_fd = std::max({connectionPipe.getOutputFd(), consolePipe.getOutputFd()});
     struct timeval timeout;
@@ -33,7 +32,10 @@ void ExecutorThread::listenOnPipe() {
         }
 
         if ( FD_ISSET(consolePipe.getOutputFd(), &listened_pipes) ) {
-            //TODO handle console pipe commands
+            int command = consolePipe.readInt();
+            runCommand(command);
+            if(!running)
+                break;
         }
 
         if ( FD_ISSET(connectionPipe.getOutputFd(), &exception_pipes) ) {
@@ -41,10 +43,10 @@ void ExecutorThread::listenOnPipe() {
         }
 
         if ( FD_ISSET(connectionPipe.getOutputFd(), &listened_pipes) ) {
-            pthread_t* new_thread = new pthread_t;
-            pthread_create(new_thread, NULL, &ExecutorThread::handleConnection, this);
+            handleRequest();
         }
     }
+    std::cout<<"Exe thread exited"<<std::endl;
 }
 
 void ExecutorThread::initFdSets() {
@@ -57,27 +59,15 @@ void ExecutorThread::initFdSets() {
 }
 
 void ExecutorThread::run() {
-    mainThread = std::thread(&ExecutorThread::listenOnPipe, this); //assigns the state of the started thread to mainThread, it's NOT a copy assignment
+    running = true;
+    mainThread = std::thread(&ExecutorThread::listenForRequests, this); //assigns the state of the started thread to mainThread, it's NOT a copy assignment
 }
 
 void ExecutorThread::join() {
     mainThread.join();
 }
 
-/*
- * W tym miejscu bedziemy w finalnej wersji programu zapewne odbierac informacji o polaczeniu do obsluzenia
- * nastepnie bedziemy musieli zlecic deserializacje danych odebranych od polaczenia przekazanego przez pipeline od ConnectionThreada
- * skolejkowac zdeserializowane dane jako obiekty typu request prosto do kolejki requestow obiektu connection
- * zasygnalizowac jakiemus RequestHandlerowi poprzez pipeline gotowosc do dzialania i niech on juz sie tym dalej zajmuje
- *
- * trzeba bedzie jedynie dodac kilka pipeline'ow i przekazac je do kolejnych obiektow threadow przy tworzeniu tychze threadow - wiec
- * modulowosc mamy zapewniona
-*/
- void* ExecutorThread::handleConnection(void* exe_trd_ptr) {
-    ExecutorThread& exe = *((ExecutorThread*)exe_trd_ptr); //pthready sa piekne
-    ConnectionCollector& connCollector = exe.connCollector;
-    Pipe& connectionPipe = exe.connectionPipe;
-
+void ExecutorThread::handleRequest() {
      std::cout<<"Handle connection was called\n";
      int conn_id = connectionPipe.readInt();
      if(conn_id < 0) {
