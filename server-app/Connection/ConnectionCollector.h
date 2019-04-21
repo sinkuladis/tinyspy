@@ -15,11 +15,11 @@
 
 class ConnectionCollector{
 private:
-
-    std::unordered_map<int, Connection&> connections;
     std::mutex mutex;
+    std::unordered_map<int,Connection&> connections;
 public:
     ConnectionCollector()=default;
+    ~ConnectionCollector();
 
     int getConnectionsFdSet(fd_set*); // monitored method
     std::vector<int> getConnectionDescriptors();
@@ -28,10 +28,10 @@ public:
     void sendData(Connection& conn);
     void sendData(const int sock_fd);
     Connection& addConnection(Socket&);
-    Connection& at(int conn_id) {return std::ref(connections.at(conn_id));}
+    Connection& at(int conn_id);
     void removeConnection(int);
-    void enter() { mutex.lock(); }
-    void leave() { mutex.unlock(); }
+    void enter();
+    void leave();
 };
 
 
