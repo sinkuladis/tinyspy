@@ -13,4 +13,7 @@ add_executable(Server.out server-app/main.cpp
         server-app/Server.h server-app/Server.cpp
         server-app/Thread/ExecutorThread.cpp server-app/Thread/ExecutorThread.h
         server-app/Request/Request.cpp server-app/Request/Request.h
-        server-app/Request/RequestCode.cpp server-app/Request/RequestCode.h)
+        server-app/Request/RequestCode.h
+        server-app/Console/ConsoleHandler.cpp server-app/Console/ConsoleHandler.h
+        server-app/Console/CommandCode.h
+        server-app/Thread/Thread.cpp server-app/Thread/Thread.h)
