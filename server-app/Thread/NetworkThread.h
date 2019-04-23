@@ -7,17 +7,17 @@
 
 #include <mutex>
 #include <functional>
-#include "../Connection/ConnectionCollector.h"
+#include "../Connection/ConnectionManager.h"
 #include "../Socket/Socket.h"
 #include "Thread.h"
 
-class ConnectionThread : public Thread {
+class NetworkThread : public Thread {
 private:
-    ConnectionCollector& connCollector;
+    ConnectionManager& connCollector;
     Socket listenSock;
     fd_set listened_fdset;
     fd_set exception_fdset;
-    Pipe& executorPipe;
+    Pipe& consolePipe;
     int max_pending_conns;
     std::mutex run_mutex;
     static void* conn_routine(void*);
@@ -25,14 +25,17 @@ private:
 
 public:
     void initListeningSocket(sockaddr_in server_addr);
-    ConnectionThread(Pipe& nConsolePipe, Pipe& nExecutorPipe, int n_max_connections, ConnectionCollector& newConnColl)
-        : Thread(nConsolePipe),
-        executorPipe(nExecutorPipe),
-        max_pending_conns(n_max_connections),
-        listenSock(Socket()),
-        connCollector(newConnColl)
-        {}
+    NetworkThread(Pipe& nConsolePipe, int n_max_connections, ConnectionManager& newConnColl)
+    : Thread(),
+      consolePipe(nConsolePipe),
+      max_pending_conns(n_max_connections),
+      listenSock(Socket()),
+      connCollector(newConnColl)
+    {}
 
+    ~NetworkThread() {
+        listenSock.shut();
+    }
     void run() override;
     void join() override;
 };
