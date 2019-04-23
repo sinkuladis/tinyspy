@@ -8,23 +8,21 @@
 
 #include <netinet/in.h>
 #include <functional>
-#include "Thread/ConnectionThread.h"
+#include "Thread/NetworkThread.h"
 #include "Pipes/Pipe.h"
 #include "Thread/ExecutorThread.h"
 #include "Console/ConsoleHandler.h"
 
 class Server {
 private:
-    Pipe consoleToConnectionPipe;
+    Pipe consoleToNetworkPipe;
     //Pipe connectionToSerializerPipe;
     //Pipe serializerToExecutorPipe;
-    Pipe consoleToExecutorPipe;
+    //Pipe consoleToExecutorPipe;
     Pipe connectionToExecutorPipe;
-    ConnectionThread connectionThread;
-    ConnectionCollector connCollector;
+    NetworkThread networkThread;
+    ConnectionManager connCollector;
     ConsoleHandler consoleHandler;
-
-    ExecutorThread executorMainThread;
 
     sockaddr_in server_addr;
 public:
