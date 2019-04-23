@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <iterator>
 #include "Connection.h"
+#include "../Exception/ConnectionTerminationException.h"
 
 Connection::Connection(Socket nSock) {
     sock = nSock;
@@ -13,7 +14,10 @@ Connection::Connection(Socket nSock) {
 void Connection::readReceivedData() {
     int readbytes = sock.read(in_buffer, 1);
     int req = readbytes == 0 ? TERM : ANSW; // deserializacja na miare makeshiftu XD
-    requestQueue.push_back(Request( req ));
+    if (req == TERM)
+        throw ConnectionTerminationException(getId());
+    else
+        requestQueue.push_back(Request( req ));
 }
 
 void Connection::writeDataToSend(char*data) {

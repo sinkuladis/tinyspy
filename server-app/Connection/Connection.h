@@ -25,7 +25,7 @@ public:
     //1* rozmiar odebranej zserializowanej wiadomosci
     //2* cala jej reszte
     //obie rzeczy z uzyciem metody z klasy Socket, ktora zadba o przeczytanie zadanej liczby bajtow za kazdym razem
-    //tak, ze to odpalac bedziemy w ConnectionThread
+    //tak, ze to odpalac bedziemy w NetworkThread
     //a nastepnie bedziemy dawac znac warstwie deserializujacej, ze zadane connection przyslalo dane do deserializacji
     void readReceivedData();
     void mockAnswer();
