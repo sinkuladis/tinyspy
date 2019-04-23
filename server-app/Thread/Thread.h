@@ -13,13 +13,11 @@ class Thread {
 protected:
     bool running;
     //roboczo pipe z konsoli. Moze stad zniknac w pozniejszych stadiach
-    Pipe& consolePipe;
     pthread_t thread_id;
 public:
-    Thread(Pipe& nConsolePipe)
+    Thread()
     : running(false),
-    thread_id(),
-    consolePipe(nConsolePipe)
+    thread_id()
     {}
     ~Thread() {}
 
