@@ -7,19 +7,21 @@
 
 
 #include "../Pipes/Pipe.h"
+#include "../Connection/ConnectionManager.h"
 
 class ConsoleHandler {
 private:
     static const int MAX_INPUT = 20;
-    Pipe& executorInputPipe;
+    ConnectionManager& connMgr;
     Pipe& connectInputPipe;
     bool running;
 
     void runCommand(std::string);
     void runShutdown();
 public:
-    ConsoleHandler(Pipe& connectP, Pipe& executorP)
-    : executorInputPipe(executorP),
+    ConsoleHandler(Pipe& connectP, ConnectionManager& nConnMgr)
+    : //executorInputPipe(executorP),
+      connMgr(nConnMgr),
       connectInputPipe(connectP),
       running(true)
     {}
