@@ -7,28 +7,43 @@
 
 #include<thread>
 #include "Thread.h"
-#include "../Connection/ConnectionCollector.h"
+#include "../Connection/ConnectionManager.h"
+
+class ConnectionManager; //forward declaration
 
 class ExecutorThread : public Thread {
 private:
-    ConnectionCollector& connCollector;
-    Pipe& connectionPipe;
+    ConnectionManager& connMgr;
+    Connection connection;
+    Pipe networkPipe;
+    Pipe consolePipe;
     std::thread mainThread;
     fd_set listened_pipes;
     fd_set exception_pipes;
 
 public:
-    ExecutorThread(Pipe& nConnectionPipe, Pipe& nConsolePipe, ConnectionCollector& nConnCollector)
-        : Thread(nConsolePipe),
-        connectionPipe(nConnectionPipe),
-        connCollector(nConnCollector)
+    ExecutorThread(Socket& connectionSocket, ConnectionManager& nMgr)
+        : Thread(),
+          connMgr(nMgr),
+        connection(connectionSocket),
+        networkPipe(Pipe()),
+        consolePipe(Pipe())
     {}
-    void listenForRequests();
-    void handleRequest(); //main routine
+
+    ~ExecutorThread() {
+        std::cout<<"destroying exe #"<<connection.getId()<<std::endl;
+    }
+
+    void listenForRequests();  //main routine
+    void handleRequest();
     void initFdSets();
 
     void run() override;
     void join() override;
+
+    Pipe& getNetworkPipe() { return std::ref(networkPipe); }
+    Pipe& getConsolePipe() { return std::ref(consolePipe); }
+    Connection& getConnection() {return std::ref(connection); }
 };
 
 

@@ -11,7 +11,7 @@
 
 void ExecutorThread::listenForRequests() {
     int n_ready_fd;
-    int max_fd = std::max({connectionPipe.getOutputFd(), consolePipe.getOutputFd()});
+    int max_fd = std::max({networkPipe.getOutputFd(), consolePipe.getOutputFd()});
     struct timeval timeout;
     while(running) {
         initFdSets();
@@ -38,23 +38,23 @@ void ExecutorThread::listenForRequests() {
                 break;
         }
 
-        if ( FD_ISSET(connectionPipe.getOutputFd(), &exception_pipes) ) {
+        if ( FD_ISSET(networkPipe.getOutputFd(), &exception_pipes) ) {
             //TODO handle connection pipe exceptions
         }
 
-        if ( FD_ISSET(connectionPipe.getOutputFd(), &listened_pipes) ) {
+        if ( FD_ISSET(networkPipe.getOutputFd(), &listened_pipes) ) {
             handleRequest();
         }
     }
-    std::cout<<"Exe thread exited"<<std::endl;
+    std::cout<<"Exe thread #"<<connection.getId()<<" exited"<<std::endl;
 }
 
 void ExecutorThread::initFdSets() {
     FD_ZERO(&listened_pipes);
     FD_ZERO(&exception_pipes);
-    FD_SET(connectionPipe.getOutputFd(), &listened_pipes);
+    FD_SET(networkPipe.getOutputFd(), &listened_pipes);
     FD_SET(consolePipe.getOutputFd(), &listened_pipes);
-    FD_SET(connectionPipe.getOutputFd(), &exception_pipes);
+    FD_SET(networkPipe.getOutputFd(), &exception_pipes);
     FD_SET(consolePipe.getOutputFd(), &exception_pipes);
 }
 
@@ -69,28 +69,27 @@ void ExecutorThread::join() {
 
 void ExecutorThread::handleRequest() {
      std::cout<<"Handle connection was called\n";
-     int conn_id = connectionPipe.readInt();
+     int conn_id = networkPipe.readInt();
      if(conn_id < 0) {
-         std::cout << "nothing to read on the connectionPipe " << std::endl;
+         std::cout << "nothing to read on the networkPipe " << std::endl;
          pthread_exit(0);
      }
 
      std::cout<<"exe read"<<conn_id<<std::endl;
-     connCollector.enter();
+     //connCollector.enter();
      std::cout<<"exe entered\n";
 
-     Connection& conn = connCollector.at(conn_id);
-     Request req = conn.getNextRequest();
+     //Connection& conn = connCollector.at(conn_id);
+     Request req = connection.getNextRequest();
 
-     switch (req.getCode()){
+     switch (req.getCode()) {
          case ANSW:
-             conn.mockAnswer();
+             connection.mockAnswer();
              break;
-         case TERM:
-             connCollector.removeConnection(conn_id);
-             break;
+         default:
+             break; //invalidRequestException?
      }
 
      std::cout<<"exe left\n";
-     connCollector.leave();
+     //connCollector.leave();
 }
