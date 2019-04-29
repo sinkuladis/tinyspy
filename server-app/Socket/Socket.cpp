@@ -85,7 +85,7 @@ Socket Socket::accept(int new_sock_domain, int new_sock_type) {
 }
 
 int Socket::write(char *inbuf, int nbytes) {
-    return RWOperation::read(sock_fd, inbuf, nbytes);
+    return RWOperation::write(sock_fd, inbuf, nbytes);
 }
 
 int Socket::read(char* outbuf, int nbytes) {
