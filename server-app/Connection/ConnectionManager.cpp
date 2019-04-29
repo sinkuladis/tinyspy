@@ -11,15 +11,20 @@
 void ConnectionManager::addConnection(Socket &listenSock) { //moge zawrzec listenSock w klasie
     Socket newSock = listenSock.accept();
 
-    ExecutorThread *thrd = new ExecutorThread(newSock, std::ref(*this)); //FIXME new, pthready, a po wychodzeniu z petli bede probowal odplac destruktor i w nim zrobie pthread exit
+    ExecutorThread *thrd = new ExecutorThread(newSock, std::ref(*this));
     int connection_id = thrd->getConnection().getId();
-
-    //TODO create a move constructor for Execution thread and then add the moved stuff to the collection?
     connectionRequestExecutionThreads.insert({connection_id, *thrd});
 
     std::cout<<"Added client #"<<connection_id<<std::endl;
     thrd->run();
 }
+
+//kolekcjonujesz klientow
+//potem odpalasz pthread_create statyczna funkcje
+//ktore powoluje sobie obiekt klienta
+//obiekt klienta w destruktorze ma tego shutdowna
+//jego destruktor odpala sie na koncu dzialania watku
+//robimy detache  tutaj zamiast joinów potem
 
 //monitored method
 void ConnectionManager::notifyAll(int commandCode) {
@@ -64,6 +69,11 @@ ConnectionManager::~ConnectionManager() {
 Connection& ConnectionManager::getConnection(int conn_id) {
     return std::ref(connectionRequestExecutionThreads.at(conn_id).getConnection());
 }
+// FIXME monitory powinny same w sobie dbać o synchronizację; stąd wszystkie* metody powinny być objęte przez lock/unlock,
+//  trzeba to naprawić, a reszta kodu ma być do tego dostosowana;
+//  w tym: pętla NetworkThreada, gdzie odczytujemy nadchodzące dane
+//  i komunikujemy obiektom ExecutorThread, iż nadeszło żądanie od klienta,
+//  ma zostać zawarta w metodzie monitora, jako że połączenia musą być monitorowane (inaczej możemy się nie zgrać między wątkami konsolki i executorami)
 
 void ConnectionManager::enter() { mutex.lock(); }
 
@@ -78,6 +88,7 @@ Pipe &ConnectionManager::getNetworkPipe(int connection_id) {
     return connectionRequestExecutionThreads.at(connection_id).getNetworkPipe();
 }
 
+//FIXME powinna być to metoda, która przestawia kolejkę requestów obiektu Connection w stan SHUTDOWN
 void ConnectionManager::shutdownConnection(int connection_id) {
     ExecutorThread& thread = connectionRequestExecutionThreads.at(connection_id);
     connectionRequestExecutionThreads.erase(connection_id);

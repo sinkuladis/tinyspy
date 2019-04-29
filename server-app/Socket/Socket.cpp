@@ -58,7 +58,7 @@ void Socket::listen(int max_connections) {
     do {
         listenStatus = ::listen( sock_fd, max_connections );
         if( listenStatus  < 0 ) {
-            perror( "ERROR while listening: " + currTry++ );
+            perror( "ERROR while listening: " + currTry++ ); //FIXME + to nie jest append, jak w Javie XD
             sleep(BASIC_SLEEP);
         }
     } while (listenStatus < 0);

@@ -16,6 +16,10 @@ protected:
     Socket sock;
     char in_buffer[1024];
     char out_buffer[1024];
+    //FIXME to NIE ma być kolejka żądań, tylko monitor kolejkujący żądania. Monitor ten ma mieć stany. Jednym z tych stanów będzie SHUTDOWN.
+    // kiedy tylko dostanie polecenie shutdown - monitor kolejkujący polecenia ma przejść w ten stan
+    // Kiedy wątek wykonujący polecenia klienta wykryje, że kolejka jest w stanie shutdown, wątek taki ma przystąpić do zamknięcia
+
     std::list<Request> requestQueue;
 public:
     Connection(Socket nSock);

@@ -6,7 +6,6 @@
 #define TINYSPY_SOCKET_H
 
 #include <netinet/in.h>
-
 class Socket {
 private:
     static const int BASIC_SLEEP = 3;

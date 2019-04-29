@@ -40,10 +40,28 @@ void* NetworkThread::conn_routine(void* connectionThreadPtr) {
     std::vector<int> conn_fds;
     struct timeval timeout;
     while(connTrd.running) {
-        timeout = {
+        timeout = { //buduje na podstawie timeouta, ktory zwroci mi listeningsocket - czyli czas, ktory minie do ponownej inicjalizacji
             .tv_sec = 10,
             .tv_usec = 0
         };
+    //FIXME tutaj bedziemy jeszcze musieli sprawdzać stan obiektu klasy ListeningSocket.
+    // ListeningSocket powinien mieć kilka stanów, wg dra Gawkowskiego minimum 3:
+    // 1) czeka na accepcie i próbuje zaakcpetować jakieś połączenie
+    // 2) zaakceptował połączenie -> (mój domysł) dołącza je do connection managera i przełącza się w stan 1)
+    // 3) niegotowy - tu zlecamy ponowienie proby przygotowania;
+    // możemy zlecać je zawsze w tym miejscu i w środku metody ListeningSocketa robić bind od nowa - tylko wtedy, kiedy jest to potrzebne
+    // Tylko raz w tym miejscu wywołujemy taką inicjalizującję ListaningSocketa. Jeśli się nie uda, to taki obiekt nie przechodzi w stan 1)
+    // i w efekcie przy następnym wywołaniu metody inicjalizującej go, próba inicjalizacji zostanie ponowiona.
+    // Taka metoda powinna zwracać tutaj informację o tym, po jakim czasie będziemy chcieli ponowić proóbę inicjalizację.
+    // Poniższy select powinien czekać właśnie tyle czasu. Select może jednak zostac przerwany poprzez komendy. Stąd należałoby w
+    // środku inicjalizacji zobaczyć ile tego czasu minęło i zwrócić tę wartość tutaj.
+    // struct timeval na Linuxie jest modyfikowany przez selecta, więc możemy po prostu przekazać tamtej metodzie zmienną timeout,
+    // by sprawdziła czy jesteśmy już w stanie ponowić próbie inicjalizacji; jeśli przystąpimy i nie wyjdzie - zwracamy nowy, ustalony czas.
+    // Jeśli wyjdzie - zwracamy nieskończony timeout
+    // Jeśli socket jest nienastawiony, ale timeout nie jest zerowy, to wtedy zwracamy timeout, który ma nam pozostać;
+    // Problem z idealnością tego rozwiązania jest taki, że wtedy czekamy troszeczkę więcej, niz faktycznie chcemy, ale nie będzie to razej u nas problemem.
+    // Gdybyśmy chcieli, moglibyśmy zapisywać czasy wywołania inicjalizacji i kalkulować faktycznie ile mamy jeszcze poczekać do inicjalizacji, ale PO CO
+
 
         connCollector.enter();  //std::cout<< " conn entered\n";
         max_fd = connTrd.initFdSets();
@@ -81,6 +99,7 @@ void* NetworkThread::conn_routine(void* connectionThreadPtr) {
             }
             //std::cout<<"enter loop"<<std::endl;
             //enter here?
+            //FIXME ta pętla potrzebuje być wykonana w monitorze ConnectionManager, co wpłynie na to, że nie wywołamy niczego na nieaktywnych połączeniach
             conn_fds = connCollector.getConnectionDescriptors();
             for (auto fd=conn_fds.begin() ; fd!=conn_fds.end() && nfds > 0 ; ++fd) {
                 if (FD_ISSET(*fd, &exception_fdset)) {
@@ -101,7 +120,6 @@ void* NetworkThread::conn_routine(void* connectionThreadPtr) {
                 }
             }
         }
-        //jesli administrator wyda polecenie odrzucenia danego klienta w innym watku, to nie mozemy konczyc polaczenia w trakcie jego obslugi, stad wychodzimy z moitora dopiero tutaj
         connCollector.leave();
         sleep(3); //bez tego connection thread jest za szybki i nie wpuszcza executora do conncollectora XD
     }
@@ -109,6 +127,8 @@ void* NetworkThread::conn_routine(void* connectionThreadPtr) {
     return nullptr;
 }
 
+//FIXME - niech connection collecor robi to wszystko, a nie tylko modyfikuje fdsety i zwraca max_fd
+//   wtedy nie trzeba też będzie 2x wywoływać tej samej metody getConnectionFdSet
 int NetworkThread::initFdSets() {
 
     FD_ZERO(&listened_fdset);
