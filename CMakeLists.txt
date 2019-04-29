@@ -18,5 +18,6 @@ add_executable(Server.out server-app/main.cpp
         server-app/Console/CommandCode.h
         server-app/Thread/Thread.cpp server-app/Thread/Thread.h
         server-app/Exception/ConnectionException.h server-app/Exception/ConnectionException.cpp
-        server-app/Exception/ConnectionTerminationException.h server-app/Exception/ConnectionTerminationException.cpp)
+        server-app/Exception/ConnectionTerminationException.h server-app/Exception/ConnectionTerminationException.cpp
+        server-app/basic/RWOperation.cpp server-app/basic/RWOperation.h)
 

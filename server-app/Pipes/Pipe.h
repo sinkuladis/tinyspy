@@ -3,8 +3,9 @@
 
 #include <utility>
 #include <string>
+#include "../basic/RWOperation.h"
 
-class Pipe
+class Pipe : protected RWOperation
 {
 private:
     int input;
@@ -14,8 +15,8 @@ public:
     int getInputFd();
     int getOutputFd();
     int writeInt(int fd);
-    int write(char*);
-    std::string read(int nbytes);
+    int write(char *data, int nbytes);
+    int read(char *buf, int nbytes);
     int readInt();
 };
 
