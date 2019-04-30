@@ -15,16 +15,14 @@ class RequestQueue {
 private:
     std::list<Request> queue;
     std::mutex mutex;
-    std::unique_lock<std::mutex> lock;
     std::condition_variable empty;
 public:
     RequestQueue()
     : queue(),
-    mutex(),
-    lock(mutex)
+    mutex()
     {}
 
-    void shutdownConnectionImmediately();
+    void shutdownConnectionNow();
     Request getNext();
     void enqueue(Request req);
 

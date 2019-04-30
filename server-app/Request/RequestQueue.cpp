@@ -5,7 +5,7 @@
 #include "RequestQueue.h"
 
 Request RequestQueue::getNext() {
-    lock.lock();
+    std::unique_lock<std::mutex> lock(mutex);
     if(queue.size() == 0)
         empty.wait(lock); //powinno odzyskać locka automatycznie
     Request req = queue.front();
@@ -15,15 +15,15 @@ Request RequestQueue::getNext() {
 }
 
 void RequestQueue::enqueue(Request req) {
-    lock.lock();
+    std::unique_lock<std::mutex> lock(mutex);
     queue.push_back(req);
     if(queue.size() == 1)
         empty.notify_one(); //tylko jeden thread będzie czekał
     lock.unlock();
 }
 
-void RequestQueue::shutdownConnectionImmediately() {
-    lock.lock();
+void RequestQueue::shutdownConnectionNow() {
+    std::unique_lock<std::mutex> lock(mutex);
     queue.push_front(Request(TERM));
     if(queue.size() == 1)
         empty.notify_one();
