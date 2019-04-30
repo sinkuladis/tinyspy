@@ -22,14 +22,7 @@ void RequestQueue::enqueue(Request req) {
     lock.unlock();
 }
 
-bool RequestQueue::isRunning() {
-    lock.lock();
-    bool ret = state == RUNNING;
-    lock.unlock();
-    return ret;
-}
-
-void RequestQueue::shutdownImmediately() {
+void RequestQueue::shutdownConnectionImmediately() {
     lock.lock();
     queue.push_front(Request(TERM));
     if(queue.size() == 1)

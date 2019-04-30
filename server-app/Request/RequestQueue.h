@@ -10,7 +10,6 @@
 #include <mutex>
 #include <condition_variable>
 #include "Request.h"
-#include "RequestQueueState.h"
 
 class RequestQueue {
 private:
@@ -18,19 +17,17 @@ private:
     std::mutex mutex;
     std::unique_lock<std::mutex> lock;
     std::condition_variable empty;
-    int state;
 public:
     RequestQueue()
     : queue(),
     mutex(),
-    lock(mutex),
-    state(RUNNING)
+    lock(mutex)
     {}
 
-    bool isRunning();
-    void shutdownImmediately();
+    void shutdownConnectionImmediately();
     Request getNext();
     void enqueue(Request req);
+
 
 };
 
