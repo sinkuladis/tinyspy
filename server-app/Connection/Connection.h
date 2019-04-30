@@ -7,30 +7,30 @@
 
 
 #include <iostream>
-#include <list>
 #include "../Socket/Socket.h"
 #include "../Request/Request.h"
+#include "../Request/RequestQueue.h"
 
 class Connection {
 protected:
     Socket sock;
     char in_buffer[1024];
     char out_buffer[1024];
-    //FIXME to NIE ma być kolejka żądań, tylko monitor kolejkujący żądania. Monitor ten ma mieć stany. Jednym z tych stanów będzie SHUTDOWN.
-    // kiedy tylko dostanie polecenie shutdown - monitor kolejkujący polecenia ma przejść w ten stan
-    // Kiedy wątek wykonujący polecenia klienta wykryje, że kolejka jest w stanie shutdown, wątek taki ma przystąpić do zamknięcia
+    RequestQueue requestQueue;
+    pthread_t executor_thread;
+    int state;
+    void handleRequest(Request request);
 
-    std::list<Request> requestQueue;
 public:
     Connection(Socket nSock);
     ~Connection() { sock.shut(); }
 
     //TODO tutaj bedzie trzeba przeczytac
-    //1* rozmiar odebranej zserializowanej wiadomosci
-    //2* cala jej reszte
-    //obie rzeczy z uzyciem metody z klasy Socket, ktora zadba o przeczytanie zadanej liczby bajtow za kazdym razem
-    //tak, ze to odpalac bedziemy w NetworkThread
-    //a nastepnie bedziemy dawac znac warstwie deserializujacej, ze zadane connection przyslalo dane do deserializacji
+    //  1* rozmiar odebranej zserializowanej wiadomosci
+    //  2* cala jej reszte
+    //  obie rzeczy z uzyciem metody z klasy Socket, ktora zadba o przeczytanie zadanej liczby bajtow za kazdym razem
+    //  tak, ze to odpalac bedziemy w NetworkThread
+    //  a nastepnie bedziemy dawac znac warstwie deserializujacej, ze zadane connection przyslalo dane do deserializacji
     void readReceivedData();
     void mockAnswer();
 
@@ -41,9 +41,9 @@ public:
 
     //testowa metoda, tymczasowo id polaczenia to zwiazany z jego gniazdem file descriptor, unikalny dla polaczenia w trakcie jego dzialania
     int getId() {return sock.getSockFd(); }
+    static void* executor_routine(void*conn_sock);
 
-    Request getNextRequest();
-
+    void terminate();
 };
 
 
