@@ -8,7 +8,7 @@
 #include "ConnectionManager.h"
 
 struct executor_args {
-    ConnectionManager connMgr;
+    ConnectionManager& connMgr;
     Socket sock;
 };
 
