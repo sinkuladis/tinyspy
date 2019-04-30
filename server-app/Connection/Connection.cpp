@@ -35,6 +35,8 @@ void *Connection::executor_routine(void *args_) {
     ConnectionManager& connMgr = args->connMgr;
     Connection conn(args->sock);
 
+    connMgr.collect(conn);
+
     while(conn.state == ONGOING) {
         //w tym momencie polecenia z konsolki dotyczące stanu połączenia będą obsługiwane jako requesty i wszystko zostaje ułatwione 500x
         Request r = conn.requestQueue.getNext();
@@ -61,5 +63,9 @@ void Connection::handleRequest(Request request) {
 
 void Connection::terminate() {
     state = SHUTDOWN;
+}
+
+RequestQueue &Connection::getRequestQueue() {
+    return requestQueue;
 }
 

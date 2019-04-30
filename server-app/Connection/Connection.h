@@ -20,6 +20,8 @@ protected:
     pthread_t executor_thread;
     int state;
     void handleRequest(Request request);
+    void mockAnswer();
+    void terminate();
 
 public:
     Connection(Socket nSock);
@@ -32,18 +34,18 @@ public:
     //  tak, ze to odpalac bedziemy w NetworkThread
     //  a nastepnie bedziemy dawac znac warstwie deserializujacej, ze zadane connection przyslalo dane do deserializacji
     void readReceivedData();
-    void mockAnswer();
+
 
     void writeDataToSend(char*);
     void printMessage() {std::cout<<"Client #"<<getId()<<" said "<< in_buffer<<std::endl;}
 
     Socket getSock() { return sock;}
+    RequestQueue &getRequestQueue() ;
 
     //testowa metoda, tymczasowo id polaczenia to zwiazany z jego gniazdem file descriptor, unikalny dla polaczenia w trakcie jego dzialania
     int getId() {return sock.getSockFd(); }
     static void* executor_routine(void*conn_sock);
 
-    void terminate();
 };
 
 
