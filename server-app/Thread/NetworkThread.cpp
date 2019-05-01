@@ -15,6 +15,9 @@
 #include "../Connection/executor_args.h"
 #include "NetworkThread.h"
 #include "../Socket/Socket.h"
+#include "../Socket/ListeningSocket.h"
+
+
 
 void NetworkThread::run() {
     run_mutex.lock();
@@ -32,40 +35,32 @@ void* NetworkThread::conn_routine(void* netThreadPtr) {
     NetworkThread &netThread = *((NetworkThread*)netThreadPtr);
     ConnectionManager& connMgr = netThread.connMgr;
     Pipe& consolePipe = netThread.consolePipe;
-    Socket& listenSock = netThread.listenSock;
+    ListeningSocket& listenSock = netThread.listenSock;
     fd_set& listened_fdset = std::ref(netThread.listened_fdset);
     fd_set& exception_fdset = std::ref(netThread.exception_fdset);
-
     int nfds, max_fd;
     struct timeval timeout;
+    timeout = {
+            .tv_sec = 0,
+            .tv_usec = 0
+    };
     while(netThread.running) {
-        timeout = {
-                .tv_sec = 10,
-                .tv_usec = 0
-        };
-        //FIXME tutaj bedziemy jeszcze musieli sprawdzać stan obiektu klasy ListeningSocket.
-        // ListeningSocket powinien mieć kilka stanów, wg dra Gawkowskiego minimum 3:
-        // 1) czeka na accepcie i próbuje zaakcpetować jakieś połączenie
-        // 2) zaakceptował połączenie -> (mój domysł) dołącza je do connection managera i przełącza się w stan 1)
-        // 3) niegotowy - tu zlecamy ponowienie proby przygotowania;
-        // możemy zlecać je zawsze w tym miejscu i w środku metody ListeningSocketa robić bind od nowa - tylko wtedy, kiedy jest to potrzebne
-        // Tylko raz w tym miejscu wywołujemy taką inicjalizującję ListaningSocketa. Jeśli się nie uda, to taki obiekt nie przechodzi w stan 1)
-        // i w efekcie przy następnym wywołaniu metody inicjalizującej go, próba inicjalizacji zostanie ponowiona.
-        // Taka metoda powinna zwracać tutaj informację o tym, po jakim czasie będziemy chcieli ponowić proóbę inicjalizację.
-        // Poniższy select powinien czekać właśnie tyle czasu. Select może jednak zostac przerwany poprzez komendy. Stąd należałoby w
-        // środku inicjalizacji zobaczyć ile tego czasu minęło i zwrócić tę wartość tutaj.
-        // struct timeval na Linuxie jest modyfikowany przez selecta, więc możemy po prostu przekazać tamtej metodzie zmienną timeout,
-        // by sprawdziła czy jesteśmy już w stanie ponowić próbie inicjalizacji; jeśli przystąpimy i nie wyjdzie - zwracamy nowy, ustalony czas.
-        // Jeśli wyjdzie - zwracamy nieskończony timeout
-        // Jeśli socket jest nienastawiony, ale timeout nie jest zerowy, to wtedy zwracamy timeout, który ma nam pozostać;
-        // Problem z idealnością tego rozwiązania jest taki, że wtedy czekamy troszeczkę więcej, niz faktycznie chcemy, ale nie będzie to razej u nas problemem.
-        // Gdybyśmy chcieli, moglibyśmy zapisywać czasy wywołania inicjalizacji i kalkulować faktycznie ile mamy jeszcze poczekać do inicjalizacji, ale PO CO
 
+
+
+        timeout=listenSock.initialize(timeout);
+        if(listenSock.getStatus()!=1)
         max_fd = netThread.initFdSets();
 
-        nfds = select(max_fd + 1, &listened_fdset, NULL, &exception_fdset, &timeout);
+        if(timeout.tv_sec==0&&timeout.tv_usec==0)
+            nfds = select(max_fd + 1, &listened_fdset, NULL, &exception_fdset, NULL);
+        else
+            nfds = select(max_fd + 1, &listened_fdset, NULL, &exception_fdset, &timeout);
+
         std::cout << "select returned " << nfds << std::endl;
-        if (nfds < 0) {
+
+
+        if (nfds < 0||listenSock.getStatus()==1) {
             //TODO handle error
         } else {
             if (FD_ISSET(consolePipe.getOutputFd(), &exception_fdset)) {
@@ -94,12 +89,11 @@ void* NetworkThread::conn_routine(void* netThreadPtr) {
 void NetworkThread::acceptNewConnection() {
     Socket newSock = listenSock.accept();
     int connection_id = newSock.getSockFd();
-    struct executor_args args = {
-            .connMgr = connMgr,
-            .sock = newSock
-    };
+    struct executor_args *args = static_cast<executor_args*>(calloc(1,sizeof(struct executor_args)));
+    args->connMgr = &connMgr;
+    args->sock = newSock;
     pthread_t thrd;
-    pthread_create(&thrd, NULL, &Connection::executor_routine, &args);
+    pthread_create(&thrd, NULL, &Connection::executor_routine, args);
     pthread_detach(thrd);
 
     std::cout << "Added client #" << connection_id << std::endl;
@@ -119,10 +113,4 @@ int NetworkThread::initFdSets() {
     return max_fd;
 }
 
-void NetworkThread::initListeningSocket(sockaddr_in server_addr) {
-    listenSock.initialize();
-    listenSock.bind(server_addr);
-    listenSock.listen(max_pending_conns);
-    listenSock.setNonblocking(); //TODO co ze statusem
-}
 

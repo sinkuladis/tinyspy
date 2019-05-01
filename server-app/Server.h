@@ -19,11 +19,9 @@ private:
     ConnectionManager connMgr;
     ConsoleHandler consoleHandler;
 
-    sockaddr_in server_addr;
 public:
     Server(int listening_port, int max_pend_conn);
     void start();
-    int getListeningPort();
 };
 
 

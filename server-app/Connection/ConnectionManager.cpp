@@ -10,7 +10,7 @@
 #include "executor_args.h"
 
 int ConnectionManager::getConnectionsFdSet(fd_set* listen, fd_set* exc) {
-    mutex.lock();
+    std::unique_lock<std::mutex> lock(mutex);
     FD_ZERO(listen);
     FD_ZERO(exc);
     int max_fd = -1, fd;
@@ -20,7 +20,7 @@ int ConnectionManager::getConnectionsFdSet(fd_set* listen, fd_set* exc) {
         FD_SET( fd, exc);
         max_fd = fd > max_fd ? fd : max_fd;
     }
-    mutex.unlock();
+    //mutex.unlock();
     return max_fd;
 }
 
@@ -29,39 +29,39 @@ ConnectionManager::~ConnectionManager() {
 }
 
 void ConnectionManager::shutdownNow(int connection_id) {
-    mutex.lock();
+    std::unique_lock<std::mutex> lock(mutex);
     try {
         Connection &conn = connections.at(connection_id);
         conn.getRequestQueue().shutdownConnectionNow();
     }catch (std::out_of_range e) {
         std::cerr << "No conneciton under id "<<connection_id<<std::endl;
     }
-    mutex.unlock();
+    //mutex.unlock();
 }
 
 void ConnectionManager::shutdownAllNow() {
-    mutex.lock();
+    std::unique_lock<std::mutex> lock(mutex);
     for(auto it = connections.begin() ; it != connections.end() ; ){
         Connection& conn = it->second;
         conn.getRequestQueue().shutdownConnectionNow();
     }
-    mutex.unlock();
+    //mutex.unlock();
 }
 
 void ConnectionManager::unregister(int id) {
-    mutex.lock();
+    std::unique_lock<std::mutex> lock(mutex);
     connections.erase(id);
-    mutex.unlock();
+    //mutex.unlock();
 }
 
 void ConnectionManager::collect(Connection& me) {
-    mutex.lock();
+    std::unique_lock<std::mutex> lock(mutex);
     connections.insert({me.getId(), me});
-    mutex.unlock();
+    //mutex.unlock();
 }
 
 void ConnectionManager::readAll(fd_set *listen, fd_set *exc) {
-    mutex.lock();
+    std::unique_lock<std::mutex> lock(mutex);
     for(auto it = connections.begin() ; it != connections.end() ; ++it) {
         Connection& conn = it->second;
         int conn_sock_fd = conn.getSock().getSockFd();
@@ -72,5 +72,5 @@ void ConnectionManager::readAll(fd_set *listen, fd_set *exc) {
             conn.readReceivedData();
         }
     }
-    mutex.unlock();
+    //mutex.unlock();
 }
