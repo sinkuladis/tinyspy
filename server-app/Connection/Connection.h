@@ -17,7 +17,6 @@ protected:
     char in_buffer[1024];
     char out_buffer[1024];
     RequestQueue requestQueue;
-    pthread_t executor_thread;
     int state;
     void handleRequest(Request request);
     void mockAnswer();

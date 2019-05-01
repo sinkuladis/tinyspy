@@ -7,101 +7,70 @@
 #include <unordered_map>
 #include "ConnectionManager.h"
 #include "../Console/CommandCode.h"
+#include "executor_args.h"
 
-void ConnectionManager::addConnection(Socket &listenSock) { //moge zawrzec listenSock w klasie
-    Socket newSock = listenSock.accept();
-
-    ExecutorThread *thrd = new ExecutorThread(newSock, std::ref(*this));
-    int connection_id = thrd->getConnection().getId();
-    connectionRequestExecutionThreads.insert({connection_id, *thrd});
-
-    std::cout<<"Added client #"<<connection_id<<std::endl;
-    thrd->run();
-}
-
-//kolekcjonujesz klientow
-//potem odpalasz pthread_create statyczna funkcje
-//ktore powoluje sobie obiekt klienta
-//obiekt klienta w destruktorze ma tego shutdowna
-//jego destruktor odpala sie na koncu dzialania watku
-//robimy detache  tutaj zamiast joinów potem
-
-//monitored method
-void ConnectionManager::notifyAll(int commandCode) {
+int ConnectionManager::getConnectionsFdSet(fd_set* listen, fd_set* exc) {
     mutex.lock();
-
-    if(commandCode == SHUTDOWN) {
-        shutdownAll();
-    }
-    else {
-        for (auto &id_thread_pair : connectionRequestExecutionThreads) {
-            id_thread_pair.second.getConsolePipe().writeInt(commandCode);
-        }
-    }
-
-    mutex.unlock();
-}
-
-int ConnectionManager::getConnectionsFdSet(fd_set *fdsetptr) {
-    FD_ZERO(fdsetptr);
+    FD_ZERO(listen);
+    FD_ZERO(exc);
     int max_fd = -1, fd;
-    for( auto& conn : connectionRequestExecutionThreads ){
-        fd = conn.second.getConnection().getSock().getSockFd();
-        FD_SET( fd, fdsetptr );
+    for( auto& conn : connections ){
+        fd = conn.second.getSock().getSockFd();
+        FD_SET( fd, listen );
+        FD_SET( fd, exc);
         max_fd = fd > max_fd ? fd : max_fd;
     }
+    mutex.unlock();
     return max_fd;
 }
 
-std::vector<int> ConnectionManager::getConnectionDescriptors() {
-    std::vector<int> fdVec;
-    for(auto& thrd : connectionRequestExecutionThreads)
-        fdVec.push_back(thrd.second.getConnection().getId());
-    return fdVec;
+ConnectionManager::~ConnectionManager() {
+    shutdownAllNow();
 }
 
-ConnectionManager::~ConnectionManager() {
+void ConnectionManager::shutdownNow(int connection_id) {
     mutex.lock();
-    shutdownAll();
+    try {
+        Connection &conn = connections.at(connection_id);
+        conn.getRequestQueue().shutdownConnectionNow();
+    }catch (std::out_of_range e) {
+        std::cerr << "No conneciton under id "<<connection_id<<std::endl;
+    }
     mutex.unlock();
 }
 
-Connection& ConnectionManager::getConnection(int conn_id) {
-    return std::ref(connectionRequestExecutionThreads.at(conn_id).getConnection());
-}
-// FIXME monitory powinny same w sobie dbać o synchronizację; stąd wszystkie* metody powinny być objęte przez lock/unlock,
-//  trzeba to naprawić, a reszta kodu ma być do tego dostosowana;
-//  w tym: pętla NetworkThreada, gdzie odczytujemy nadchodzące dane
-//  i komunikujemy obiektom ExecutorThread, iż nadeszło żądanie od klienta,
-//  ma zostać zawarta w metodzie monitora, jako że połączenia musą być monitorowane (inaczej możemy się nie zgrać między wątkami konsolki i executorami)
-
-void ConnectionManager::enter() { mutex.lock(); }
-
-void ConnectionManager::leave() { mutex.unlock(); }
-
-//powinny dzialac poprawnie, skoro przechowuje w kontenerach referencje na typy, zamiast konkretnych typow
-Pipe &ConnectionManager::getConsolePipe(int connection_id) {
-    return connectionRequestExecutionThreads.at(connection_id).getConsolePipe();
-}
-
-Pipe &ConnectionManager::getNetworkPipe(int connection_id) {
-    return connectionRequestExecutionThreads.at(connection_id).getNetworkPipe();
-}
-
-//FIXME powinna być to metoda, która przestawia kolejkę requestów obiektu Connection w stan SHUTDOWN
-void ConnectionManager::shutdownConnection(int connection_id) {
-    ExecutorThread& thread = connectionRequestExecutionThreads.at(connection_id);
-    connectionRequestExecutionThreads.erase(connection_id);
-    thread.shutdown();
-    thread.join();
-    delete &thread;
-}
-
-void ConnectionManager::shutdownAll() {
-    for(auto e = connectionRequestExecutionThreads.begin() ; e != connectionRequestExecutionThreads.end() ; ){
-        e->second.shutdown();
-        e->second.join();
-        delete &e->second;
-        e = connectionRequestExecutionThreads.erase(connectionRequestExecutionThreads.begin());
+void ConnectionManager::shutdownAllNow() {
+    mutex.lock();
+    for(auto it = connections.begin() ; it != connections.end() ; ){
+        Connection& conn = it->second;
+        conn.getRequestQueue().shutdownConnectionNow();
     }
+    mutex.unlock();
+}
+
+void ConnectionManager::unregister(int id) {
+    mutex.lock();
+    connections.erase(id);
+    mutex.unlock();
+}
+
+void ConnectionManager::collect(Connection& me) {
+    mutex.lock();
+    connections.insert({me.getId(), me});
+    mutex.unlock();
+}
+
+void ConnectionManager::readAll(fd_set *listen, fd_set *exc) {
+    mutex.lock();
+    for(auto it = connections.begin() ; it != connections.end() ; ++it) {
+        Connection& conn = it->second;
+        int conn_sock_fd = conn.getSock().getSockFd();
+        if(FD_ISSET(conn_sock_fd, exc)) {
+            //TODO handle socket exception
+        }
+        if(FD_ISSET(conn_sock_fd, listen)) {
+            conn.readReceivedData();
+        }
+    }
+    mutex.unlock();
 }

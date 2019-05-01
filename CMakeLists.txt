@@ -11,7 +11,6 @@ add_executable(Server.out server-app/main.cpp
         server-app/Connection/ConnectionManager.h server-app/Connection/ConnectionManager.cpp
         server-app/Thread/NetworkThread.h server-app/Thread/NetworkThread.cpp
         server-app/Server.h server-app/Server.cpp
-        server-app/Thread/ExecutorThread.cpp server-app/Thread/ExecutorThread.h
         server-app/Request/Request.cpp server-app/Request/Request.h
         server-app/Request/RequestCode.h
         server-app/Console/ConsoleHandler.cpp server-app/Console/ConsoleHandler.h
