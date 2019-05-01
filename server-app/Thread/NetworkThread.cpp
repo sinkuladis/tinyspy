@@ -94,12 +94,11 @@ void* NetworkThread::conn_routine(void* netThreadPtr) {
 void NetworkThread::acceptNewConnection() {
     Socket newSock = listenSock.accept();
     int connection_id = newSock.getSockFd();
-    struct executor_args args = {
-            .connMgr = connMgr,
-            .sock = newSock
-    };
+    struct executor_args *args = static_cast<executor_args*>(calloc(1,sizeof(struct executor_args)));
+    args->connMgr = &connMgr;
+    args->sock = newSock;
     pthread_t thrd;
-    pthread_create(&thrd, NULL, &Connection::executor_routine, &args);
+    pthread_create(&thrd, NULL, &Connection::executor_routine, args);
     pthread_detach(thrd);
 
     std::cout << "Added client #" << connection_id << std::endl;

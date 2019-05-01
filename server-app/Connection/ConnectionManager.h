@@ -19,7 +19,10 @@ private:
     std::unordered_map<int,Connection&> connections;
 
 public:
-    ConnectionManager()=default;
+    ConnectionManager()
+    : connections(),
+    mutex()
+    {}
     ~ConnectionManager();
 
     int getConnectionsFdSet(fd_set* listen, fd_set* exc);

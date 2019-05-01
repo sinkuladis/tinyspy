@@ -11,6 +11,7 @@
 
 Connection::Connection(Socket nSock) {
     sock = nSock;
+    state = ONGOING;
 }
 
 void Connection::readReceivedData() {
@@ -32,8 +33,9 @@ void Connection::mockAnswer() {
 
 void *Connection::executor_routine(void *args_) {
     struct executor_args *args = static_cast<executor_args*>(args_);
-    ConnectionManager& connMgr = args->connMgr;
+    ConnectionManager& connMgr = *(args->connMgr);
     Connection conn(args->sock);
+    free(args);
 
     connMgr.collect(conn);
 
