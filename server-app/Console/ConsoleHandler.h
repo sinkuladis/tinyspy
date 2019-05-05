@@ -11,7 +11,7 @@
 
 class ConsoleHandler {
 private:
-    static const int MAX_INPUT = 20;
+    static const int MAX_INPUT_SIZE = 20;
     ConnectionManager& connMgr;
     Pipe& connectInputPipe;
     bool running;

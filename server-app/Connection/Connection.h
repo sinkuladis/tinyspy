@@ -8,14 +8,16 @@
 
 #include <iostream>
 #include <list>
+#include <vector>
 #include "../Socket/Socket.h"
 #include "../Request/Request.h"
+#include "Serialization/DataMessage.h"
 
 class Connection {
 protected:
     Socket sock;
-    char in_buffer[1024];
-    char out_buffer[1024];
+    std::vector<char> in_buffer;
+    std::vector<char> out_buffer;
     std::list<Request> requestQueue;
 public:
     Connection(Socket nSock);
@@ -31,7 +33,7 @@ public:
     void mockAnswer();
 
     void writeDataToSend(char*);
-    void printMessage() {std::cout<<"Client #"<<getId()<<" said "<< in_buffer<<std::endl;}
+    void printMessage() {std::cout<<"Client #"<<getId()<<" said "<< in_buffer.data()<<std::endl;}
 
     Socket getSock() { return sock;}
 
@@ -39,7 +41,6 @@ public:
     int getId() {return sock.getSockFd(); }
 
     Request getNextRequest();
-
 };
 
 

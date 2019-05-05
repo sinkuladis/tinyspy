@@ -11,12 +11,13 @@
 //FIXME nie wywoluj sockedt() przy konstrukcji obiektu Socket, pobieraj file descriptor explicite
 Socket Socket::initialize(int domain, int type) {
     int currTry = 1;
-    this->domain = domain; this->type=type;
+    this->domain = domain;
+    this->type = type;
     do {
-        sock_fd = socket( domain , type, 0 );
-        if( sock_fd < 0 ) {
+        sock_fd = socket(domain, type, 0);
+        if (sock_fd < 0) {
 
-            perror( "ERROR while creating a socket in try:");
+            perror("ERROR while creating a socket in try:");
             sleep(BASIC_SLEEP);
         }
     } while (sock_fd < 0);
@@ -26,7 +27,7 @@ Socket Socket::initialize(int domain, int type) {
 //nie!!! wrzucac do destruktora
 void Socket::shut() { //albo w destruktorze
     std::cout << "Zamykanie socketu: " << sock_fd << std::endl;
-    shutdown( sock_fd, SHUT_RDWR );
+    shutdown(sock_fd, SHUT_RDWR);
 }
 
 void Socket::bind(sockaddr_in &addr_to_bind) {
@@ -34,9 +35,9 @@ void Socket::bind(sockaddr_in &addr_to_bind) {
     int bindStatus;
 
     do {
-        bindStatus = ::bind( sock_fd, ( struct sockaddr * ) &addr_to_bind, sizeof( addr_to_bind ) );
-        if( bindStatus < 0 ) {
-            perror( "ERROR while binding socket: " + currTry++ );
+        bindStatus = ::bind(sock_fd, (struct sockaddr *) &addr_to_bind, sizeof(addr_to_bind));
+        if (bindStatus < 0) {
+            perror("ERROR while binding socket: " + currTry++);
             sleep(BASIC_SLEEP);
         }
     } while (bindStatus < 0);
@@ -44,8 +45,7 @@ void Socket::bind(sockaddr_in &addr_to_bind) {
     std::cout << "Socket binded." << std::endl;
 }
 
-void Socket::setNonblocking()
-{
+void Socket::setNonblocking() {
     int flags;
     if (-1 == (flags = fcntl(sock_fd, F_GETFL, 0)))
         flags = 0;
@@ -56,9 +56,9 @@ void Socket::listen(int max_connections) {
     int currTry = 1;
     int listenStatus;
     do {
-        listenStatus = ::listen( sock_fd, max_connections );
-        if( listenStatus  < 0 ) {
-            perror( "ERROR while listening: " + currTry++ );
+        listenStatus = ::listen(sock_fd, max_connections);
+        if (listenStatus < 0) {
+            perror("ERROR while listening: " + currTry++);
             sleep(BASIC_SLEEP);
         }
     } while (listenStatus < 0);
@@ -66,28 +66,36 @@ void Socket::listen(int max_connections) {
 }
 
 int Socket::read(char *buf, int nbytes) {
-    int offs=0, read_bytes=0;
-    while(nbytes > 0) {
+    int offs = 0, read_bytes = 0;
+    while (nbytes > 0) {
         read_bytes = ::read(sock_fd, buf + offs, nbytes);
 
-        if(read_bytes == 0)
+        if (read_bytes == 0)
             break;
 
-        offs+=read_bytes;
-        nbytes-=read_bytes;
+        offs += read_bytes;
+        nbytes -= read_bytes;
     }
     return offs;
 }
 
-int Socket::write(char *output, int nbytes) {
-    int written_bytes=0, offs=0;
-    while(nbytes > 0) {
+int Socket::read(int32_t *num) {
+    return ::read(sock_fd, num, sizeof(int32_t));
+}
+
+int Socket::write(const char *output, int nbytes) {
+    int written_bytes = 0, offs = 0;
+    while (nbytes > 0) {
         written_bytes = ::write(sock_fd, output + offs, nbytes);
 
-        offs+=written_bytes;
-        nbytes-=written_bytes;
+        offs += written_bytes;
+        nbytes -= written_bytes;
     }
     return offs;
+}
+
+int Socket::write(const int32_t *num) {
+    return ::write(sock_fd, num, sizeof(int32_t));
 }
 
 int Socket::getSockFd() const {
@@ -96,15 +104,15 @@ int Socket::getSockFd() const {
 
 Socket Socket::accept(int new_sock_domain, int new_sock_type) {
     Socket newSock;
-    socklen_t addr_len = sizeof( newSock.sock_addr );
-    int new_sockfd = ::accept(sock_fd,( struct sockaddr * ) &newSock.sock_addr, &addr_len );
+    socklen_t addr_len = sizeof(newSock.sock_addr);
+    int new_sockfd = ::accept(sock_fd, (struct sockaddr *) &newSock.sock_addr, &addr_len);
 
-    if(new_sockfd <= 0 ) {
+    if (new_sockfd <= 0) {
         //TODO error
-    }else {
+    } else {
         newSock.sock_fd = new_sockfd;
-        newSock.domain=new_sock_domain;
-        newSock.type=new_sock_type;
+        newSock.domain = new_sock_domain;
+        newSock.type = new_sock_type;
     }
     return newSock;
 }

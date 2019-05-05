@@ -23,7 +23,9 @@ public:
     void setNonblocking();
 
     int read(char *buf, int nbytes = 1024);
-    int write(char *output, int nbytes);
+    int read(int32_t *num);
+    int write(const char *output, int nbytes);
+    int write(const int32_t *num);
 
     int getSockFd() const;
     void connect();
