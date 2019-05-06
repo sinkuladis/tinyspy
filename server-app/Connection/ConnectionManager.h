@@ -23,6 +23,7 @@ public:
     : connections(),
     mutex()
     {}
+  
     ~ConnectionManager();
 
     int getConnectionsFdSet(fd_set* listen, fd_set* exc);

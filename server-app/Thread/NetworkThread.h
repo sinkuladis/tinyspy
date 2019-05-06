@@ -10,11 +10,13 @@
 #include "../Connection/ConnectionManager.h"
 #include "../Socket/Socket.h"
 #include "Thread.h"
+#include "../Socket/ListeningSocket.h"
+
 
 class NetworkThread : public Thread {
 private:
     ConnectionManager& connMgr;
-    Socket listenSock;
+    ListeningSocket listenSock;
     fd_set listened_fdset;
     fd_set exception_fdset;
     Pipe& consolePipe;
@@ -22,16 +24,17 @@ private:
     std::mutex run_mutex;
     static void* conn_routine(void*);
     int initFdSets();
+    int listening_port;
 
     void acceptNewConnection();
 public:
-    void initListeningSocket(sockaddr_in server_addr);
-    NetworkThread(Pipe& nConsolePipe, int n_max_connections, ConnectionManager& newConnColl)
+    NetworkThread(Pipe& nConsolePipe, int n_max_connections, ConnectionManager& newConnColl, int port)
     : Thread(),
       consolePipe(nConsolePipe),
       max_pending_conns(n_max_connections),
-      listenSock(Socket()),
-      connMgr(newConnColl)
+      listenSock(ListeningSocket(n_max_connections, port)),
+      connMgr(newConnColl),
+      listening_port(port)
     {}
 
     ~NetworkThread() {
