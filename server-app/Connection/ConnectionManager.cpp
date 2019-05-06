@@ -20,7 +20,6 @@ int ConnectionManager::getConnectionsFdSet(fd_set* listen, fd_set* exc) {
         FD_SET( fd, exc);
         max_fd = fd > max_fd ? fd : max_fd;
     }
-    //mutex.unlock();
     return max_fd;
 }
 
@@ -36,7 +35,6 @@ void ConnectionManager::shutdownNow(int connection_id) {
     }catch (std::out_of_range e) {
         std::cerr << "No conneciton under id "<<connection_id<<std::endl;
     }
-    //mutex.unlock();
 }
 
 void ConnectionManager::shutdownAllNow() {
@@ -45,19 +43,16 @@ void ConnectionManager::shutdownAllNow() {
         Connection& conn = it->second;
         conn.getRequestQueue().shutdownConnectionNow();
     }
-    //mutex.unlock();
 }
 
 void ConnectionManager::unregister(int id) {
     std::unique_lock<std::mutex> lock(mutex);
     connections.erase(id);
-    //mutex.unlock();
 }
 
 void ConnectionManager::collect(Connection& me) {
     std::unique_lock<std::mutex> lock(mutex);
     connections.insert({me.getId(), me});
-    //mutex.unlock();
 }
 
 void ConnectionManager::readAll(fd_set *listen, fd_set *exc) {
@@ -72,5 +67,4 @@ void ConnectionManager::readAll(fd_set *listen, fd_set *exc) {
             conn.readReceivedData();
         }
     }
-    //mutex.unlock();
 }

@@ -20,9 +20,10 @@ private:
 
 public:
     ConnectionManager()
-            : connections(),
-              mutex()
+    : connections(),
+    mutex()
     {}
+  
     ~ConnectionManager();
 
     int getConnectionsFdSet(fd_set* listen, fd_set* exc);
