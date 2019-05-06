@@ -32,18 +32,14 @@ int Pipe::getOutputFd()
 {
     return output;
 }
-//FIXME
-std::string Pipe::read(int nbytes) {
-    char* buf = (char*) calloc(nbytes, 1);
-    int ret = ::read(output, buf, nbytes);
 
-    std::string deb(buf);
-    free(buf);
-    return deb;
+int Pipe::read(char *buf, int nbytes) {
+    int ret = RWOperation::read(output, buf, nbytes);
+    return ret;
 }
-//FIXME
-int Pipe::write(char*  data) {
-    int ret = ::write(input, data, sizeof(data));
+
+int Pipe::write(char *data, int nbytes) {
+    int ret = RWOperation::write(input, data, nbytes);
     return ret;
 }
 

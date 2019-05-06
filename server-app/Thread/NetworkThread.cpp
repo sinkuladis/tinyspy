@@ -3,17 +3,21 @@
 //
 
 #include <pthread.h>
-#include "NetworkThread.h"
-#include "../Socket/Socket.h"
-#include "../Console/CommandCode.h"
+
 #include <sys/select.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/time.h>
+
 #include <functional>
 #include <algorithm>
-#include <thread>
-#include "../Exception/ConnectionTerminationException.h"
+
+#include "../Connection/executor_args.h"
+#include "NetworkThread.h"
+#include "../Socket/Socket.h"
+#include "../Socket/ListeningSocket.h"
+#include "Exception/ConnectionTerminationException.h"
+
 
 void NetworkThread::run() {
     run_mutex.lock();
@@ -27,111 +31,89 @@ void NetworkThread::join() {
 }
 
 
-void* NetworkThread::conn_routine(void* connectionThreadPtr) {
-    //to jest prawdziwe piękno pthreadów. static do wykonania na konkretnym obiekcie
-    NetworkThread &connTrd = *((NetworkThread*)connectionThreadPtr); //TODO co jesli obiekt zostanie w tej chwili realokowany? -> musisz przekazac wskaznik na strukture, w ktorej polem bedzie referencja na obiekt
-    ConnectionManager& connCollector = connTrd.connCollector;
-    Pipe& consolePipe = connTrd.consolePipe;
-    Socket& listenSock = connTrd.listenSock;
-    fd_set& listened_fdset = std::ref(connTrd.listened_fdset);
-    fd_set& exception_fdset = std::ref(connTrd.exception_fdset);
-
+void* NetworkThread::conn_routine(void* netThreadPtr) {
+    NetworkThread &netThread = *((NetworkThread*)netThreadPtr);
+    ConnectionManager& connMgr = netThread.connMgr;
+    Pipe& consolePipe = netThread.consolePipe;
+    ListeningSocket& listenSock = netThread.listenSock;
+    fd_set& listened_fdset = std::ref(netThread.listened_fdset);
+    fd_set& exception_fdset = std::ref(netThread.exception_fdset);
     int nfds, max_fd;
-    std::vector<int> conn_fds;
     struct timeval timeout;
-    while(connTrd.running) {
-        timeout = {
-            .tv_sec = 10,
+    timeout = {
+            .tv_sec = 0,
             .tv_usec = 0
-        };
+    };
+    while(netThread.running) {
 
-        connCollector.enter();  //std::cout<< " conn entered\n";
-        max_fd = connTrd.initFdSets();
 
-        nfds = select(max_fd+1, &listened_fdset, NULL, &exception_fdset, &timeout);
-        //leave here?
-        std::cout<<"select returned "<<nfds<<std::endl;
-        if(nfds < 0){
+
+        timeout=listenSock.initialize(timeout);
+        if(listenSock.getStatus()!=1)
+        max_fd = netThread.initFdSets();
+
+        if(timeout.tv_sec==0&&timeout.tv_usec==0)
+            nfds = select(max_fd + 1, &listened_fdset, NULL, &exception_fdset, NULL);
+        else
+            nfds = select(max_fd + 1, &listened_fdset, NULL, &exception_fdset, &timeout);
+
+        std::cout << "select returned " << nfds << std::endl;
+
+
+        if (nfds < 0||listenSock.getStatus()==1) {
             //TODO handle error
-        }
-        else if (nfds == 0){
-
-        }
-        else{
-            if(FD_ISSET(consolePipe.getOutputFd(), &exception_fdset)) {
+        } else {
+            if (FD_ISSET(consolePipe.getOutputFd(), &exception_fdset)) {
                 //TODO handle console exceptions
-                --nfds;
             }
-            if(FD_ISSET(consolePipe.getOutputFd(), &listened_fdset)) {
-                --nfds;
+            if (FD_ISSET(consolePipe.getOutputFd(), &listened_fdset)) {
                 int command = consolePipe.readInt();
-                connTrd.runCommand(command);
-                if(!connTrd.running) { //seems cheap, might delete it later
-                    connCollector.leave();
+                netThread.runCommand(command);
+                if (!netThread.running)
                     break;
-                }
             }
-            if(FD_ISSET(listenSock.getSockFd(), &exception_fdset)){
+            if (FD_ISSET(listenSock.getSockFd(), &exception_fdset)) {
                 //TODO handle listenSock exceptions
-                --nfds;
             }
-            if(FD_ISSET(listenSock.getSockFd(), &listened_fdset)) {
-                connCollector.addConnection(listenSock);
-                --nfds;
-            }
-            //std::cout<<"enter loop"<<std::endl;
-            //enter here?
-            conn_fds = connCollector.getConnectionDescriptors();
-            for (auto fd=conn_fds.begin() ; fd!=conn_fds.end() && nfds > 0 ; ++fd) {
-                if (FD_ISSET(*fd, &exception_fdset)) {
-                    //TODO handle connection exceptions
-                    --nfds;
-                }
-                if(FD_ISSET(*fd, &listened_fdset)) {
-                    int conn_id = *fd;
-                    try {
-                        connCollector.getConnection(conn_id).readReceivedData();
-                        connCollector.getNetworkPipe(conn_id).writeInt(conn_id);
-                        std::cout<<"exe thread was notified of"<< conn_id<<std::endl;
-                    }catch (ConnectionTerminationException e){
-                        connCollector.shutdownConnection(conn_id);
-                    }
-
-                    --nfds;
-                }
+            if (FD_ISSET(listenSock.getSockFd(), &listened_fdset))
+                netThread.acceptNewConnection();
+            try {
+                connMgr.readAll(&listened_fdset, &exception_fdset);
+            }catch(ConnectionTerminationException e) {
+                connMgr.shutdownNow(e.getConnectionId());
             }
         }
-        //jesli administrator wyda polecenie odrzucenia danego klienta w innym watku, to nie mozemy konczyc polaczenia w trakcie jego obslugi, stad wychodzimy z moitora dopiero tutaj
-        connCollector.leave();
         sleep(3); //bez tego connection thread jest za szybki i nie wpuszcza executora do conncollectora XD
     }
     std::cout<<"Connection thread exited"<<std::endl;
     return nullptr;
 }
 
+void NetworkThread::acceptNewConnection() {
+    Socket newSock = listenSock.accept();
+    int connection_id = newSock.getSockFd();
+    struct executor_args *args = static_cast<executor_args*>(calloc(1,sizeof(struct executor_args)));
+    args->connMgr = &connMgr;
+    args->sock = newSock;
+    pthread_t thrd;
+    pthread_create(&thrd, NULL, &Connection::executor_routine, args);
+    pthread_detach(thrd);
+
+    std::cout << "Added client #" << connection_id << std::endl;
+}
+
 int NetworkThread::initFdSets() {
-
-    FD_ZERO(&listened_fdset);
-    FD_ZERO(&exception_fdset);
-
-    int max_fd = connCollector.getConnectionsFdSet(&listened_fdset);
-    connCollector.getConnectionsFdSet(&exception_fdset);
+    int max_fd = connMgr.getConnectionsFdSet(&listened_fdset, &exception_fdset);
 
     int listen_sock_fd = listenSock.getSockFd();
     int console_fd = consolePipe.getOutputFd();
-
     FD_SET(listen_sock_fd, &listened_fdset);
     FD_SET(console_fd, &listened_fdset);
+    FD_SET(listen_sock_fd, &exception_fdset);
+    FD_SET(console_fd, &exception_fdset);
 
     max_fd = std::max({max_fd, listen_sock_fd, console_fd});
-
     return max_fd;
 }
 
-void NetworkThread::initListeningSocket(sockaddr_in server_addr) {
-    listenSock.initialize();
-    listenSock.bind(server_addr);
-    listenSock.listen(max_pending_conns);
-    listenSock.setNonblocking(); //TODO co ze statusem
-}
 

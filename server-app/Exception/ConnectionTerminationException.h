@@ -9,7 +9,9 @@
 
 class ConnectionTerminationException : public ConnectionException {
 public:
-    ConnectionTerminationException(int n_conn_id, std::string nMessage="Connection terminated due to remote app exit") : ConnectionException(nMessage, n_conn_id) {}
+    ConnectionTerminationException(int n_conn_id = 0, std::string nMessage="Connection terminated due to remote app exit") : ConnectionException(nMessage, n_conn_id) {}
+private:
+    int n_conn_id;
 };
 
 

@@ -10,25 +10,18 @@
 #include <functional>
 #include "Thread/NetworkThread.h"
 #include "Pipes/Pipe.h"
-#include "Thread/ExecutorThread.h"
 #include "Console/ConsoleHandler.h"
 
 class Server {
 private:
     Pipe consoleToNetworkPipe;
-    //Pipe connectionToSerializerPipe;
-    //Pipe serializerToExecutorPipe;
-    //Pipe consoleToExecutorPipe;
-    Pipe connectionToExecutorPipe;
     NetworkThread networkThread;
-    ConnectionManager connCollector;
+    ConnectionManager connMgr;
     ConsoleHandler consoleHandler;
 
-    sockaddr_in server_addr;
 public:
     Server(int listening_port, int max_pend_conn);
     void start();
-    int getListeningPort();
 };
 
 

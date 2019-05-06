@@ -12,39 +12,29 @@
 #include <unistd.h>
 #include <unordered_map>
 #include "Connection.h"
-#include "../Thread/ExecutorThread.h"
-
-class ExecutorThread; //forward declaration
 
 class ConnectionManager{
 private:
     std::mutex mutex;
-    std::unordered_map<int,ExecutorThread&> connectionRequestExecutionThreads;
-    void shutdownAll();
+    std::unordered_map<int,Connection&> connections;
 
 public:
-    ConnectionManager()=default;
+    ConnectionManager()
+    : connections(),
+    mutex()
+    {}
+  
     ~ConnectionManager();
 
-    int getConnectionsFdSet(fd_set*);
-    std::vector<int> getConnectionDescriptors();
+    int getConnectionsFdSet(fd_set* listen, fd_set* exc);
 
-    void addConnection(Socket &listenSock);
-    Connection& getConnection(int conn_id);
-    void shutdownConnection(int);
+    void shutdownNow(int);
+    void shutdownAllNow();
 
-    void enter();
-    void leave();
+    void collect(Connection&);
+    void unregister(int);
 
-    //
-    void notifyAll(int commandCode);
-
-    //these two will make the structure of NetworkThread and ConsoleHandler easier since there will be no need to store
-    //info about all the pipes for each execution thread inside objects of those 2 classes. They'll just make use of the pipes storen inside ExecutionThreads
-
-    Pipe& getConsolePipe(int connection_id);
-    Pipe& getNetworkPipe(int connection_id);
-
+    void readAll(fd_set* listen, fd_set* exc);
 };
 
 
