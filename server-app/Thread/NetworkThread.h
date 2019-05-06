@@ -13,7 +13,7 @@
 
 class NetworkThread : public Thread {
 private:
-    ConnectionManager& connCollector;
+    ConnectionManager& connMgr;
     Socket listenSock;
     fd_set listened_fdset;
     fd_set exception_fdset;
@@ -23,6 +23,7 @@ private:
     static void* conn_routine(void*);
     int initFdSets();
 
+    void acceptNewConnection();
 public:
     void initListeningSocket(sockaddr_in server_addr);
     NetworkThread(Pipe& nConsolePipe, int n_max_connections, ConnectionManager& newConnColl)
@@ -30,12 +31,13 @@ public:
       consolePipe(nConsolePipe),
       max_pending_conns(n_max_connections),
       listenSock(Socket()),
-      connCollector(newConnColl)
+      connMgr(newConnColl)
     {}
 
     ~NetworkThread() {
         listenSock.shut();
     }
+
     void run() override;
     void join() override;
 };

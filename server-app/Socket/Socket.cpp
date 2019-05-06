@@ -8,7 +8,6 @@
 #include <fcntl.h>
 #include <functional>
 
-//FIXME nie wywoluj sockedt() przy konstrukcji obiektu Socket, pobieraj file descriptor explicite
 Socket Socket::initialize(int domain, int type) {
     int currTry = 1;
     this->domain = domain; this->type=type;
@@ -52,42 +51,18 @@ void Socket::setNonblocking()
     int ret = fcntl(sock_fd, F_SETFL, flags | O_NONBLOCK); //FIXME nie trzymajmy flagi pod intem
 }
 
+
 void Socket::listen(int max_connections) {
     int currTry = 1;
     int listenStatus;
     do {
         listenStatus = ::listen( sock_fd, max_connections );
         if( listenStatus  < 0 ) {
-            perror( "ERROR while listening: " + currTry++ );
+            perror( "ERROR while listening: " + currTry++ ); //FIXME + to nie jest append, jak w Javie XD
             sleep(BASIC_SLEEP);
         }
     } while (listenStatus < 0);
     std::cout << "Listening." << std::endl;
-}
-
-int Socket::read(char *buf, int nbytes) {
-    int offs=0, read_bytes=0;
-    while(nbytes > 0) {
-        read_bytes = ::read(sock_fd, buf + offs, nbytes);
-
-        if(read_bytes == 0)
-            break;
-
-        offs+=read_bytes;
-        nbytes-=read_bytes;
-    }
-    return offs;
-}
-
-int Socket::write(char *output, int nbytes) {
-    int written_bytes=0, offs=0;
-    while(nbytes > 0) {
-        written_bytes = ::write(sock_fd, output + offs, nbytes);
-
-        offs+=written_bytes;
-        nbytes-=written_bytes;
-    }
-    return offs;
 }
 
 int Socket::getSockFd() const {
@@ -107,6 +82,14 @@ Socket Socket::accept(int new_sock_domain, int new_sock_type) {
         newSock.type=new_sock_type;
     }
     return newSock;
+}
+
+int Socket::write(char *inbuf, int nbytes) {
+    return RWOperation::write(sock_fd, inbuf, nbytes);
+}
+
+int Socket::read(char* outbuf, int nbytes) {
+    return RWOperation::read(sock_fd, outbuf, nbytes);
 }
 
 
