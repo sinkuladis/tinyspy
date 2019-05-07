@@ -13,7 +13,7 @@ find_package(Protobuf REQUIRED)
 add_executable(Server.out server-app/main.cpp
         server-app/Pipes/Pipe.h server-app/Pipes/Pipe.cpp
         server-app/Socket/Socket.h server-app/Socket/Socket.cpp
-		server-app/Socket/ListeningSocket.h server-app/Socket/ListeningSocket.cpp
+	server-app/Socket/ListeningSocket.h server-app/Socket/ListeningSocket.cpp
 		server-app/Connection/Connection.h server-app/Connection/Connection.cpp
         server-app/Connection/ConnectionManager.h server-app/Connection/ConnectionManager.cpp
         server-app/Thread/NetworkThread.h server-app/Thread/NetworkThread.cpp

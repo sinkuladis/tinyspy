@@ -31,22 +31,9 @@ int Socket::write(const char *inbuf, int nbytes) {
     return RWOperation::write(sock_fd, inbuf, nbytes);
 }
 
-// int Socket::read(char* outbuf, int nbytes) {
-//     return RWOperation::read(sock_fd, outbuf, nbytes);
-// }
-
-int Socket::read(char *buf, int nbytes) {
-    int offs = 0, read_bytes = 0;
-    while (nbytes > 0) {
-        read_bytes = ::read(sock_fd, buf + offs, nbytes);
-
-        if (read_bytes == 0)
-            break;
-
-        offs += read_bytes;
-        nbytes -= read_bytes;
-    }
-    return offs;
+int Socket::read(char* outbuf, int nbytes) {
+    return RWOperation::read(sock_fd, outbuf, nbytes);
 }
+
 
 

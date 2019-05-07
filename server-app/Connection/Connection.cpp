@@ -8,7 +8,6 @@
 #include "Connection.h"
 #include "executor_args.h"
 #include "../Exception/ConnectionTerminationException.h"
-#include "Serialization/messages.pb.h"
 #include "ConnectionState.h"
 
 Connection::Connection(Socket nSock) : in_buffer(1024, 0), out_buffer(1024, 0) {
@@ -68,14 +67,14 @@ void Connection::mockAnswer() {
 }
 
 void *Connection::executor_routine(void *args_) {
-    struct executor_args *args = static_cast<executor_args *>(args_);
-    ConnectionManager &connMgr = *(args->connMgr);
+    struct executor_args *args = static_cast<executor_args*>(args_);
+    ConnectionManager& connMgr = *(args->connMgr);
     Connection conn(args->sock);
     free(args);
 
     connMgr.collect(conn);
 
-    while (conn.state == ONGOING) {
+    while(conn.state == ONGOING) {
         //w tym momencie polecenia z konsolki dotyczące stanu połączenia będą obsługiwane jako requesty i wszystko zostaje ułatwione 500x
         Request r = conn.requestQueue.getNext();
         conn.handleRequest(r);
@@ -86,7 +85,7 @@ void *Connection::executor_routine(void *args_) {
 
 void Connection::handleRequest(Request request) {
     int reqcode = request.getCode();
-    switch (reqcode) {
+    switch(reqcode){
         case ANSW:
             mockAnswer();
             break;
