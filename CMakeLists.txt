@@ -4,11 +4,11 @@ project(tinyspy)
 set(CMAKE_CXX_STANDARD 14)
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS} -pthread")
 
-include_directories(server-app)
+include_directories(server-app 3rdparty)
 
 link_directories(3rdparty)
 
-find_package(Protobuf REQUIRED)
+#find_package(Protobuf REQUIRED)
 
 add_executable(Server.out server-app/main.cpp
         server-app/Pipes/Pipe.h server-app/Pipes/Pipe.cpp
