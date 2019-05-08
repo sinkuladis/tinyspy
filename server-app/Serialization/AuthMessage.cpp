@@ -3,7 +3,7 @@
 //
 
 #include "AuthMessage.h"
- #include <utility>
+
 void AuthMessage::serialize(std::string &output) {
     if (!m_auth_msg.SerializeToString(&output))
         throw std::runtime_error("AuthMessage::serialize failed");

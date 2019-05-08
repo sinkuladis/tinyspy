@@ -1,18 +1,11 @@
 #include <arpa/inet.h>
 #include <err.h>
-#include <errno.h>
 #include <iostream>
 #include <netdb.h>
-#include <netinet/in.h>
-#include <cstdio>
-#include <cstdlib>
 #include <cstring>
-#include <sys/socket.h>
-#include <sys/types.h>
 #include <unistd.h>
 #include <Serialization/AuthMessage.h>
 #include "Serialization/DataMessage.h"
-#include "Socket/Socket.h"
 
 struct addrinfo *get_sockaddr(const char *hostname, const char *port);
 

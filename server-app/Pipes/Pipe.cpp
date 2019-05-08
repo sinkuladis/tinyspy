@@ -1,8 +1,6 @@
 #include "Pipe.h"
 
-#include <stdio.h>
 #include <unistd.h>
-#include <sys/types.h>
 #include <stdexcept>
 #include <fcntl.h>
 #include <cstring>

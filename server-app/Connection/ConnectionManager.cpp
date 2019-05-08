@@ -3,11 +3,8 @@
 //
 
 #include <functional>
-#include <sys/select.h>
 #include <unordered_map>
 #include "ConnectionManager.h"
-#include "../Console/CommandCode.h"
-#include "executor_args.h"
 
 int ConnectionManager::getConnectionsFdSet(fd_set* listen, fd_set* exc) {
     std::unique_lock<std::mutex> lock(mutex);

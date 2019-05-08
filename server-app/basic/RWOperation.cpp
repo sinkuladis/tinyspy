@@ -3,9 +3,7 @@
 //
 
 #include <functional>
-#include <fcntl.h>
 #include <unistd.h>
-#include<iostream>
 #include "RWOperation.h"
 
 int RWOperation::read(int file_descriptor, char *buf, int nbytes) {

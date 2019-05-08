@@ -19,7 +19,7 @@ private:
     void runCommand(std::string);
     void runShutdown();
 public:
-    ConsoleHandler(Pipe& connectP, ConnectionManager& nConnMgr)
+    ConsoleHandler(std::reference_wrapper<Pipe> connectP, std::reference_wrapper<ConnectionManager> nConnMgr)
     : //executorInputPipe(executorP),
       connMgr(nConnMgr),
       connectInputPipe(connectP),
