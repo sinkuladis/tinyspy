@@ -1,0 +1,11 @@
+# Folders
+cmake-*/
+build/
+tmp/
+.vscode/
+
+# Files
+*.patch
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/.name

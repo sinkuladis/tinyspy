@@ -8,8 +8,6 @@
 #include <netinet/in.h>
 #include "../basic/RWOperation.h"
 
-
-
 class ListeningSocket;
 class Socket : protected RWOperation {
     friend class ListeningSocket;
@@ -27,7 +25,9 @@ public:
 
     void shut();
     int read(char* outbuf,int nbytes);
-    int write(char* inbuf, int nbytes);
+    int read(int32_t *num);
+    int write(const char* inbuf, int nbytes);
+    int write(const int32_t *num);
     int getSockFd() const;
 
 };

@@ -5,18 +5,14 @@
 #include <pthread.h>
 
 #include <sys/select.h>
-#include <sys/types.h>
 #include <unistd.h>
-#include <sys/time.h>
 
 #include <functional>
 #include <algorithm>
 
 #include "../Connection/executor_args.h"
 #include "NetworkThread.h"
-#include "../Socket/Socket.h"
-#include "../Socket/ListeningSocket.h"
-
+#include "Exception/ConnectionTerminationException.h"
 
 
 void NetworkThread::run() {
@@ -77,8 +73,11 @@ void* NetworkThread::conn_routine(void* netThreadPtr) {
             }
             if (FD_ISSET(listenSock.getSockFd(), &listened_fdset))
                 netThread.acceptNewConnection();
-
-            connMgr.readAll(&listened_fdset, &exception_fdset);
+            try {
+                connMgr.readAll(&listened_fdset, &exception_fdset);
+            }catch(ConnectionTerminationException e) {
+                connMgr.shutdownNow(e.getConnectionId());
+            }
         }
         sleep(3); //bez tego connection thread jest za szybki i nie wpuszcza executora do conncollectora XD
     }

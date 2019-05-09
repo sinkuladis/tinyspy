@@ -2,11 +2,10 @@
 // Created by zmus on 16/04/19.
 //
 #include "Server.h"
-#include "Pipes/Pipe.h"
 
-int main(int argc, char**argv) {
-    if(argc != 3) {
-        printf("Usage: %s port max_connection\n",argv[0]);
+int main(int argc, char **argv) {
+    if (argc != 3) {
+        printf("Usage: %s port max_connection\n", argv[0]);
         return 1;
     }
     int port = std::atoi(argv[1]);

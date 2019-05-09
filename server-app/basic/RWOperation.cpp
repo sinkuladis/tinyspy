@@ -3,9 +3,7 @@
 //
 
 #include <functional>
-#include <fcntl.h>
 #include <unistd.h>
-#include<iostream>
 #include "RWOperation.h"
 
 int RWOperation::read(int file_descriptor, char *buf, int nbytes) {
@@ -22,7 +20,7 @@ int RWOperation::read(int file_descriptor, char *buf, int nbytes) {
     return offs;
 }
 
-int RWOperation::write(int file_descriptor, char *output, int nbytes) {
+int RWOperation::write(int file_descriptor, const char *output, int nbytes) {
     int written_bytes=0, offs=0;
     while(nbytes > 0) {
         written_bytes = ::write(file_descriptor, output + offs, nbytes);

@@ -11,7 +11,7 @@
 class RWOperation {
 public:
     int read(int file_descriptor, char *buf, int nbytes = 1024);
-    int write(int file_descriptor, char *output, int nbytes);
+    int write(int file_descriptor, const char *output, int nbytes);
 };
 
 

@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package tinyspy;
+
+message DataMsg {
+    int32 request_id = 1;// potrzebujemy ID requesta?
+    int32 agent_id = 2;
+    bool live_data = 3; // przemyśleć proces dostępu do zebranych zasobów
+    int32 session_token = 4;
+
+    oneof data {
+        bool flag = 5;
+        int32 num = 6;
+        string text = 7;
+        bytes image = 8;
+    }
+}
+
+message AuthMsg {
+    string login = 1; // client-side hashing?
+    string password = 2;
+}

@@ -7,6 +7,9 @@
 
 
 #include <iostream>
+#include <list>
+#include <vector>
+#include "Serialization/DataMessage.h"
 #include "../Socket/Socket.h"
 #include "../Request/Request.h"
 #include "../Request/RequestQueue.h"
@@ -14,14 +17,13 @@
 class Connection {
 protected:
     Socket sock;
-    char in_buffer[1024];
-    char out_buffer[1024];
+    std::vector<char> in_buffer;
+    std::vector<char> out_buffer;
     RequestQueue requestQueue;
     int state;
     void handleRequest(Request request);
     void mockAnswer();
     void terminate();
-
 public:
     Connection(Socket nSock);
     ~Connection() { sock.shut(); }
@@ -36,7 +38,7 @@ public:
 
 
     void writeDataToSend(char*);
-    void printMessage() {std::cout<<"Client #"<<getId()<<" said "<< in_buffer<<std::endl;}
+    void printMessage() {std::cout<<"Client #"<<getId()<<" said "<< in_buffer.data()<<std::endl;}
 
     Socket getSock() { return sock;}
     RequestQueue &getRequestQueue() ;

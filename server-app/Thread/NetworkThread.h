@@ -28,7 +28,7 @@ private:
 
     void acceptNewConnection();
 public:
-    NetworkThread(Pipe& nConsolePipe, int n_max_connections, ConnectionManager& newConnColl, int port)
+    NetworkThread(std::reference_wrapper<Pipe> nConsolePipe, int n_max_connections, std::reference_wrapper<ConnectionManager> newConnColl, int port)
     : Thread(),
       consolePipe(nConsolePipe),
       max_pending_conns(n_max_connections),
