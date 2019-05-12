@@ -4,7 +4,7 @@
 #include <netdb.h>
 #include <cstring>
 #include <unistd.h>
-#include <Serialization/AuthMessage.h>
+#include "Serialization/AuthMessage.h"
 #include "Serialization/DataMessage.h"
 
 struct addrinfo *get_sockaddr(const char *hostname, const char *port);
