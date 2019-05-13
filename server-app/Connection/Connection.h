@@ -50,7 +50,7 @@ public:
     int getId() { return sock.getSockFd(); }
     static void* executor_routine(void*conn_sock);
 
-    void switchState();
+    void switchReadState();
 
     bool isReadyToSend() const;
 

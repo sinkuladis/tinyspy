@@ -17,7 +17,7 @@ Connection::Connection(Socket nSock) : in_buffer(1024, 0), out_buffer(1024, 0), 
 
 void Connection::readReceivedData() {
     if(readbytesleft == 0)
-        switchState();
+        switchReadState();
 
     int readbytes = 0;
     switch(state) {
@@ -38,7 +38,7 @@ void Connection::readReceivedData() {
     readbytesleft -= readbytes;
 }
 
-void Connection::switchState() {
+void Connection::switchReadState() {
     switch (state) {
         case IDLE:
             state = RTYP;
