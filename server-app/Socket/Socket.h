@@ -9,7 +9,7 @@
 #include "../basic/RWOperation.h"
 
 class ListeningSocket;
-class Socket : protected RWOperation {
+class Socket {
     friend class ListeningSocket;
 private:
     int domain;
@@ -24,9 +24,9 @@ public:
     {}
 
     void shut();
-    int read(char* outbuf,int nbytes);
+    int read(void *outbuf, int nbytes);
     int read(int32_t *num);
-    int write(const char* inbuf, int nbytes);
+    int write(const void *inbuf, int nbytes);
     int write(const int32_t *num);
     int getSockFd() const;
 

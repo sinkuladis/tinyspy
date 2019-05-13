@@ -10,39 +10,57 @@
 #include "../Exception/ConnectionTerminationException.h"
 #include "ConnectionState.h"
 
-Connection::Connection(Socket nSock) : in_buffer(1024, 0), out_buffer(1024, 0) {
+Connection::Connection(Socket nSock) : in_buffer(1024, 0), out_buffer(1024, 0), readbytesleft(0), readyToSend(false) {
     sock = nSock;
-    state = ONGOING;
+    state = IDLE;
 }
 
 void Connection::readReceivedData() {
-    int32_t msgLen = 0, msgType = 0;
-    sock.read(&msgType);
-    msgType = ntohl(msgType);
-    sock.read(&msgLen);
-    msgLen = ntohl(msgLen);
-    in_buffer.clear();
-    in_buffer.resize(msgLen);
-    int readbytes = sock.read(in_buffer.data(), msgLen);
+    if(readbytesleft == 0)
+        switchState();
 
-    std::string input(in_buffer.begin(), in_buffer.end());
+    int readbytes = 0;
+    switch(state) {
+        case RTYP:
+            readbytes = sock.read(&mtype+readoffs, readbytesleft);
+            break;
+        case RSIZ:
+            readbytes = sock.read(&msize+readoffs, readbytesleft);
+            break;
+        case RMES:
+            readbytes = sock.read(in_buffer.data()+readoffs, readbytesleft);
+    }
 
-    std::unique_ptr<TinyMessage> msg;
+    if(readbytes == 0)
+        throw ConnectionTerminationException();
 
-    if (msgType == DataType)
-        msg = std::make_unique<DataMessage>(input);
-    else if (msgType == AuthType)
-        msg = std::make_unique<AuthMessage>(input);
+    readoffs += readbytes;
+    readbytesleft -= readbytes;
+}
 
-//    std::cout << ">>>>>> Debug Message String\n" << msg->debugString() << "<<<<<<" << std::endl;
-
-    int req = readbytes == 0 ? TERM : ANSW; // deserializacja na miare makeshiftu XD
-
-    if (req == TERM)
-        throw ConnectionTerminationException(getId());
-//        std::cerr << "Read 0 bytes" << std::endl;
-    else
-        requestQueue.enqueue(Request(req));
+void Connection::switchState() {
+    switch (state) {
+        case IDLE:
+            state = RTYP;
+            readbytesleft = sizeof(int32_t);
+            break;
+        case RTYP:
+            state = RSIZ;
+            readbytesleft = sizeof(int32_t);
+            break;
+        case RSIZ:
+            state = RMES;
+            in_buffer.clear();
+            readbytesleft = ntohl(msize);
+            in_buffer.resize(readbytesleft);
+            break;
+        case RMES:
+            requestQueue.enqueue(DECYPHER);
+            state = IDLE;
+            readbytesleft = 0;
+            break;
+    }
+    readoffs = 0;
 }
 
 void Connection::writeDataToSend(char *data) {
@@ -74,7 +92,7 @@ void *Connection::executor_routine(void *args_) {
 
     connMgr.collect(conn);
 
-    while(conn.state == ONGOING) {
+    while(conn.state != SHUT) {
         //w tym momencie polecenia z konsolki dotyczące stanu połączenia będą obsługiwane jako requesty i wszystko zostaje ułatwione 500x
         Request r = conn.requestQueue.getNext();
         conn.handleRequest(r);
@@ -85,24 +103,46 @@ void *Connection::executor_routine(void *args_) {
 
 void Connection::handleRequest(Request request) {
     int reqcode = request.getCode();
-    switch(reqcode){
+    switch(reqcode) {
         case ANSW:
-            mockAnswer();
+            readyToSend = true;
             break;
+
         case TERM:
             terminate();
             break;
-        default:
-            //InvalidRequestException?
+
+        case DECYPHER:
+            //na razie nie ma co robić
+            requestQueue.enqueue(DESERIALIZE);
+            break;
+
+        case DESERIALIZE:
+            deserialize();
             break;
     }
 }
 
 void Connection::terminate() {
-    state = SHUTDOWN;
+    state = SHUT;
 }
 
 RequestQueue &Connection::getRequestQueue() {
     return requestQueue;
 }
 
+void Connection::deserialize() {
+    std::string input(in_buffer.begin(), in_buffer.end());
+    std::unique_ptr<TinyMessage> msg;
+    if (mtype == DataType)
+        msg = std::make_unique<DataMessage>(input);
+    else if (mtype == AuthType)
+        msg = std::make_unique<AuthMessage>(input);
+    mtype = -1;
+    msize = -1;
+    requestQueue.enqueue(ANSW);
+}
+
+bool Connection::isReadyToSend() const {
+    return readyToSend;
+}

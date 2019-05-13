@@ -4,17 +4,23 @@
 
 #include <functional>
 #include <unordered_map>
+#include <Exception/ConnectionTerminationException.h>
 #include "ConnectionManager.h"
 
-int ConnectionManager::getConnectionsFdSet(fd_set* listen, fd_set* exc) {
+int ConnectionManager::getConnectionsFdSet(fd_set *listen, fd_set *send, fd_set *exc) {
     std::unique_lock<std::mutex> lock(mutex);
     FD_ZERO(listen);
+    FD_ZERO(send);
     FD_ZERO(exc);
     int max_fd = -1, fd;
-    for( auto& conn : connections ){
-        fd = conn.second.getSock().getSockFd();
-        FD_SET( fd, listen );
-        FD_SET( fd, exc);
+    for( auto& item : connections ){
+        Connection& connection = item.second;
+        fd = connection.getSock().getSockFd();
+        FD_SET(fd, listen );
+        FD_SET(fd, exc);
+        if(connection.isReadyToSend())
+            FD_SET(fd, send);
+
         max_fd = fd > max_fd ? fd : max_fd;
     }
     return max_fd;
@@ -26,11 +32,15 @@ ConnectionManager::~ConnectionManager() {
 
 void ConnectionManager::shutdownNow(int connection_id) {
     std::unique_lock<std::mutex> lock(mutex);
+    _shutdownNow(connection_id);
+}
+
+void ConnectionManager::_shutdownNow(int connection_id) const {
     try {
         Connection &conn = connections.at(connection_id);
         conn.getRequestQueue().shutdownConnectionNow();
-    }catch (std::out_of_range e) {
-        std::cerr << "No conneciton under id "<<connection_id<<std::endl;
+    } catch (std::out_of_range e) {
+        std::cerr << "No conneciton under id " << connection_id << std::endl;
     }
 }
 
@@ -61,7 +71,11 @@ void ConnectionManager::readAll(fd_set *listen, fd_set *exc) {
             //TODO handle socket exception
         }
         if(FD_ISSET(conn_sock_fd, listen)) {
-            conn.readReceivedData();
+            try {
+                conn.readReceivedData();
+            }catch (ConnectionTerminationException e){
+                _shutdownNow(conn.getId());
+            }
         }
     }
 }

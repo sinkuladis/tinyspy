@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fcntl.h>
 #include <functional>
+#define _GNU_SOURCE //potrzebne accept4
 
 struct timeval ListeningSocket::initialize(struct timeval time_left, int domain, int type) {
 
@@ -102,7 +103,7 @@ int ListeningSocket::getStatus() const {
 Socket ListeningSocket::accept(int new_sock_domain, int new_sock_type) {
     Socket newSock;
     socklen_t addr_len = sizeof( newSock.sock_addr );
-    int new_sockfd = ::accept(sock_fd,( struct sockaddr * ) &newSock.sock_addr, &addr_len );
+    int new_sockfd = ::accept4(sock_fd,( struct sockaddr * ) &newSock.sock_addr, &addr_len, SOCK_NONBLOCK);
     if(new_sockfd <= 0 ) {
         perror("cannot create a new socket");
     }else {

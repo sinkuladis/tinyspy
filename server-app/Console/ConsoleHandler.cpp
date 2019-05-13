@@ -38,7 +38,7 @@ void ConsoleHandler::runCommand(std::string command) {
 
 void ConsoleHandler::runShutdown() {
     std::cout << "Rozpoczeto zamykanie serwera" << std::endl;
-    connectInputPipe.writeInt(SHUTDOWN);
+    connectInputPipe.writeInt(SHUT);
     connMgr.shutdownAllNow();
     running = false;
 }

@@ -17,36 +17,48 @@
 class Connection {
 protected:
     Socket sock;
+    int32_t msize;
+    int32_t mtype;
+
     std::vector<char> in_buffer;
     std::vector<char> out_buffer;
     RequestQueue requestQueue;
     int state;
+    int readbytesleft;
+    int readoffs;
+    int writebytesleft;
+    int writeoffs;
+
+    bool readyToSend;
+
     void handleRequest(Request request);
     void mockAnswer();
     void terminate();
+
 public:
     Connection(Socket nSock);
     ~Connection() { sock.shut(); }
 
-    //TODO tutaj bedzie trzeba przeczytac
-    //  1* rozmiar odebranej zserializowanej wiadomosci
-    //  2* cala jej reszte
-    //  obie rzeczy z uzyciem metody z klasy Socket, ktora zadba o przeczytanie zadanej liczby bajtow za kazdym razem
-    //  tak, ze to odpalac bedziemy w NetworkThread
-    //  a nastepnie bedziemy dawac znac warstwie deserializujacej, ze zadane connection przyslalo dane do deserializacji
     void readReceivedData();
-
-
     void writeDataToSend(char*);
-    void printMessage() {std::cout<<"Client #"<<getId()<<" said "<< in_buffer.data()<<std::endl;}
+    void printMessage() { std::cout<<"Client #"<<getId()<<" said "<< in_buffer.data()<<std::endl; }
 
     Socket getSock() { return sock;}
     RequestQueue &getRequestQueue() ;
 
     //testowa metoda, tymczasowo id polaczenia to zwiazany z jego gniazdem file descriptor, unikalny dla polaczenia w trakcie jego dzialania
-    int getId() {return sock.getSockFd(); }
+    int getId() { return sock.getSockFd(); }
     static void* executor_routine(void*conn_sock);
 
+    void switchState();
+
+    bool isReadyToSend() const;
+
+    void setBytesLeft();
+
+    void readtype();
+
+    void deserialize();
 };
 
 

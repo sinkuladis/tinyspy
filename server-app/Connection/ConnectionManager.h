@@ -17,6 +17,7 @@ class ConnectionManager{
 private:
     std::mutex mutex;
     std::unordered_map<int,Connection&> connections;
+    void _shutdownNow(int connection_id) const;
 
 public:
     ConnectionManager()
@@ -26,7 +27,7 @@ public:
   
     ~ConnectionManager();
 
-    int getConnectionsFdSet(fd_set* listen, fd_set* exc);
+    int getConnectionsFdSet(fd_set *listen, fd_set *send, fd_set *exc);
 
     void shutdownNow(int);
     void shutdownAllNow();
