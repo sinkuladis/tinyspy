@@ -14,6 +14,20 @@ OutMessage::OutMessage(std::string message) {
     this->message = (void *)buffer;
 }
 
+OutMessage::OutMessage(OutMessage&& other) : message(std::move(other.message)){
+    this->messageSize = other.get_messageSize();
+    this->offset = other.get_offset();
+    other.message = nullptr;
+}
+
+OutMessage& OutMessage::operator=(OutMessage&& other) {
+    free(this->message);
+    this->message = std::move(other.message);
+    this->messageSize = other.messageSize;
+    this->offset = other.offset;
+}
+
+
 OutMessage::~OutMessage() {
     free(this->message);
 }

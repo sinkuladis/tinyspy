@@ -15,12 +15,15 @@ private:
     int32_t offset;
 public:
     OutMessage(std::string);
+    OutMessage(OutMessage&&);
     ~OutMessage();
     void *get_message();
     int32_t get_messageSize();
     int32_t get_offset();
     void set_offset(int32_t);
     void set_message(std::string);
+
+    OutMessage& operator=(OutMessage&&);
 };
 
 
