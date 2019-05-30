@@ -29,7 +29,9 @@ add_library(Communication SHARED server-app/Pipes/Pipe.h server-app/Pipes/Pipe.c
 		server-app/basic/RWOperation.cpp server-app/basic/RWOperation.h
 		server-app/Request/RequestQueue.h server-app/Request/RequestQueue.cpp
 		server-app/Connection/ConnectionState.h
-		server-app/Connection/executor_args.h)
+		server-app/Connection/executor_args.h
+		server-app/OutMessage/OutMessage.h server-app/OutMessage/OutMessage.cpp
+		server-app/OutMessageQueue/OutMessageQueue.h server-app/OutMessageQueue/OutMessageQueue.cpp)
 
 add_executable(Server.out server-app/main.cpp)
 add_executable(Client.out client-app/client.cpp)
