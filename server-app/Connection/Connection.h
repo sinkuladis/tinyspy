@@ -13,6 +13,9 @@
 #include "../Socket/Socket.h"
 #include "../Request/Request.h"
 #include "../Request/RequestQueue.h"
+#include "../OutMessageQueue/OutMessageQueue.h"
+#include "../OutMessage/OutMessage.h"
+
 
 class Connection {
 protected:
@@ -23,6 +26,7 @@ protected:
     std::vector<char> in_buffer;
     std::vector<char> out_buffer;
     RequestQueue requestQueue;
+    OutMessageQueue outMessageQueue;
     int state;
     int readbytesleft;
     int readoffs;
@@ -40,6 +44,7 @@ public:
     ~Connection() { sock.shut(); }
 
     void readReceivedData();
+    void sendData();
     void writeDataToSend(char*);
     void printMessage() { std::cout<<"Client #"<<getId()<<" said "<< in_buffer.data()<<std::endl; }
 

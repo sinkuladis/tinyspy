@@ -79,3 +79,21 @@ void ConnectionManager::readAll(fd_set *listen, fd_set *exc) {
         }
     }
 }
+
+void ConnectionManager::writeAll(fd_set *write, fd_set *exc) {
+    std::unique_lock<std::mutex> lock(mutex);
+    for(auto it = connections.begin() ; it != connections.end() ; ++it) {
+        Connection& conn = it->second;
+        int conn_sock_fd = conn.getSock().getSockFd();
+        if(FD_ISSET(conn_sock_fd, exc)) {
+            //TODO handle socket exception
+        }
+        if(FD_ISSET(conn_sock_fd, write)) {
+            try {
+                conn.sendData();
+            }catch (ConnectionTerminationException e){
+                _shutdownNow(conn.getId());
+            }
+        }
+    }
+}

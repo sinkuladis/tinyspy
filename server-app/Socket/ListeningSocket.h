@@ -41,6 +41,7 @@ public:
     int setNonblocking();
     int getSockFd() const;
     int getStatus() const;
+    void setStatus(int s);
     Socket accept(int new_sock_domain=AF_INET, int new_sock_type=SOCK_STREAM);
 };
 

@@ -6,14 +6,14 @@
 #include <iostream>
 #include <fcntl.h>
 #include <functional>
-#define _GNU_SOURCE //potrzebne accept4
+
 
 struct timeval ListeningSocket::initialize(struct timeval time_left, int domain, int type) {
 
     struct timeval timeout;
 
     timeout = {
-            .tv_sec = 10,
+            .tv_sec = 4,
             .tv_usec = 0
     };
 
@@ -41,7 +41,7 @@ struct timeval ListeningSocket::initialize(struct timeval time_left, int domain,
             }
         }
     }
-    if(status!=1)
+    if(status==3)
     {
         timeout = {
                 .tv_sec = 0,
@@ -98,6 +98,10 @@ int ListeningSocket::getSockFd() const {
 
 int ListeningSocket::getStatus() const {
     return status;
+}
+
+void ListeningSocket::setStatus(int s) {
+    status=s;
 }
 
 Socket ListeningSocket::accept(int new_sock_domain, int new_sock_type) {

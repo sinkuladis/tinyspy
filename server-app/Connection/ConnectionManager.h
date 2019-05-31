@@ -36,6 +36,7 @@ public:
     void unregister(int);
 
     void readAll(fd_set* listen, fd_set* exc);
+    void writeAll(fd_set* write, fd_set* exc);
 };
 
 

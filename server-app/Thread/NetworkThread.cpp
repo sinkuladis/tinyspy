@@ -47,10 +47,10 @@ void NetworkThread::_net_routine() {
         if (listenSock.getStatus() != 1)
             max_fd = initFdSets();
 
-        if (timeout.tv_sec == 0 && timeout.tv_usec == 0)
-            nfds = select(max_fd + 1, &listened_fdset, NULL, &exception_fdset, NULL);
-        else
-            nfds = select(max_fd + 1, &listened_fdset, NULL, &exception_fdset, &timeout);
+      /*  if (listenSock.getStatus() == 3)
+            nfds = select(max_fd + 1, &listened_fdset, &write_fdset, &exception_fdset, NULL);
+        else */
+            nfds = select(max_fd + 1, &listened_fdset, &write_fdset, &exception_fdset, &timeout);
 
         std::cout << "select returned " << nfds << std::endl;
 
@@ -67,12 +67,21 @@ void NetworkThread::_net_routine() {
                 if (!running)
                     break;
             }
+            if (FD_ISSET(consolePipe.getOutputFd(), &write_fdset)) {
+                int command = consolePipe.readInt();
+                runCommand(command);
+                if (!running)
+                    break;
+            }
             if (FD_ISSET(listenSock.getSockFd(), &exception_fdset)) {
                 //TODO handle listenSock exceptions
             }
             if (FD_ISSET(listenSock.getSockFd(), &listened_fdset))
                 acceptNewConnection();
+            if (FD_ISSET(listenSock.getSockFd(), &write_fdset))
+                acceptNewConnection();
             connMgr.readAll(&listened_fdset, &exception_fdset);
+            connMgr.writeAll(&write_fdset, &exception_fdset);
         }
     }
     std::cout << "Connection thread exited" << std::endl;
@@ -92,16 +101,20 @@ void NetworkThread::acceptNewConnection() {
 }
 
 int NetworkThread::initFdSets() {
-    int max_fd = connMgr.getConnectionsFdSet(&listened_fdset, nullptr, &exception_fdset);
+    int max_fd = connMgr.getConnectionsFdSet(&listened_fdset, &write_fdset, &exception_fdset);
 
     int listen_sock_fd = listenSock.getSockFd();
     int console_fd = consolePipe.getOutputFd();
     FD_SET(listen_sock_fd, &listened_fdset);
     FD_SET(console_fd, &listened_fdset);
+    FD_SET(listen_sock_fd, &write_fdset);
+    FD_SET(console_fd, &write_fdset);
     FD_SET(listen_sock_fd, &exception_fdset);
     FD_SET(console_fd, &exception_fdset);
 
+
     max_fd = std::max({max_fd, listen_sock_fd, console_fd});
+
     return max_fd;
 }
 

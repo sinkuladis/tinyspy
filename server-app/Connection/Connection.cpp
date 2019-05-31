@@ -16,6 +16,7 @@ Connection::Connection(Socket nSock) : in_buffer(1024, 0), out_buffer(1024, 0), 
 }
 
 void Connection::readReceivedData() {
+
     if(readbytesleft == 0)
         switchReadState();
 
@@ -36,11 +37,34 @@ void Connection::readReceivedData() {
 
     readoffs += readbytes;
     readbytesleft -= readbytes;
+
+    if(readbytesleft == 0)
+        switchReadState();
+
+
+}
+
+
+void Connection::sendData() {
+
+    int writebytes = 0;
+
+    void* msg=outMessageQueue.get_message();
+    int size=outMessageQueue.get_message_size();
+    writebytes = sock.write(msg, outMessageQueue.get_message_size()-outMessageQueue.get_offset());
+    outMessageQueue.push_offset(writebytes);
+
+    if(writebytes == -1)
+        throw ConnectionTerminationException();
+    else if(size==writebytes)
+        readyToSend = false;
+
 }
 
 void Connection::switchReadState() {
     switch (state) {
         case IDLE:
+
             state = RTYP;
             readbytesleft = sizeof(int32_t);
             break;
@@ -79,9 +103,21 @@ void Connection::mockAnswer() {
 
     int32_t msgLen = ntohl(output.length());
     int32_t msgType = ntohl(dataMsg.getType());
-    sock.write(&msgType);
+
+    char *ptr = (char*)&msgType;
+    std::string s ="";
+    for(int i=0;i<4;++i, ++ptr)
+        s+=*ptr;
+    ptr = (char*)&msgLen;
+    for(int i=0;i<4;++i, ++ptr)
+        s+=*ptr;
+
+    std::string msg=s+output;
+
+    outMessageQueue.add_message(OutMessage(msg));
+    /*sock.write(&msgType);
     sock.write(&msgLen);
-    sock.write(output.data(), output.length());
+    sock.write(output.data(), output.length());*/
 }
 
 void *Connection::executor_routine(void *args_) {
@@ -105,6 +141,7 @@ void Connection::handleRequest(Request request) {
     int reqcode = request.getCode();
     switch(reqcode) {
         case ANSW:
+            mockAnswer();
             readyToSend = true;
             break;
 
