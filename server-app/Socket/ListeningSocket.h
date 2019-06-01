@@ -15,7 +15,7 @@ private:
     int domain;
     int type;
     int sock_fd;
-    int status;
+    bool status;
     int max_connections;
     sockaddr_in server_addr;
 
@@ -40,8 +40,7 @@ public:
     void shut();
     int setNonblocking();
     int getSockFd() const;
-    int getStatus() const;
-    void setStatus(int s);
+    int isReady() const;
     Socket accept(int new_sock_domain=AF_INET, int new_sock_type=SOCK_STREAM);
 };
 

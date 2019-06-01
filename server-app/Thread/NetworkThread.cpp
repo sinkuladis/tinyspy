@@ -44,15 +44,14 @@ void NetworkThread::_net_routine() {
 
 
         timeout = listenSock.initialize(timeout);
-        if (listenSock.getStatus() != 1)
+        if (listenSock.isReady())
             max_fd = initFdSets();
 
 
 
-        if (listenSock.getStatus() == 3)
+        if (listenSock.isReady())
             {
                 nfds = select(max_fd + 1, &listened_fdset, &write_fdset, &exception_fdset, NULL);
-                listenSock.setStatus(2);
             }
         else
             nfds = select(max_fd + 1, &listened_fdset, &write_fdset, &exception_fdset, &timeout);
@@ -62,7 +61,7 @@ void NetworkThread::_net_routine() {
         //std::cout << "select returned " << nfds << std::endl;
 
 
-        if (nfds < 0 || listenSock.getStatus() == 1) {
+        if (nfds < 0 || !listenSock.isReady()) {
             //TODO handle error
         } else {
             if (FD_ISSET(consolePipe.getOutputFd(), &exception_fdset)) {
@@ -79,9 +78,11 @@ void NetworkThread::_net_routine() {
             }
             if (FD_ISSET(listenSock.getSockFd(), &listened_fdset))
                 acceptNewConnection();
-            
+
+
             connMgr.readAll(&listened_fdset, &exception_fdset);
             connMgr.writeAll(&write_fdset, &exception_fdset);
+
         }
     }
     std::cout << "Connection thread exited" << std::endl;
@@ -90,6 +91,7 @@ void NetworkThread::_net_routine() {
 void NetworkThread::acceptNewConnection() {
     Socket newSock = listenSock.accept();
     int connection_id = newSock.getSockFd();
+    FD_SET(connection_id, &listened_fdset);
     struct executor_args *args = static_cast<executor_args*>(calloc(1,sizeof(struct executor_args)));
     args->connMgr = &connMgr;
     args->sock = newSock;
@@ -100,9 +102,8 @@ void NetworkThread::acceptNewConnection() {
 }
 
 int NetworkThread::initFdSets() {
+
     int max_fd = connMgr.getConnectionsFdSet(&listened_fdset, &write_fdset, &exception_fdset);
-    if (max_fd>0)
-        listenSock.setStatus(3);
 
     int listen_sock_fd = listenSock.getSockFd();
     int console_fd = consolePipe.getOutputFd();
