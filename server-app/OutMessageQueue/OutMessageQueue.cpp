@@ -72,3 +72,10 @@ int32_t OutMessageQueue::push_offset(int32_t difference) {
     return remaining_data;
 }
 
+int32_t OutMessageQueue::not_empty() const {
+
+    if (this->messages.empty())
+    return false;
+
+    return true;
+}

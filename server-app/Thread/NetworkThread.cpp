@@ -47,12 +47,19 @@ void NetworkThread::_net_routine() {
         if (listenSock.getStatus() != 1)
             max_fd = initFdSets();
 
-      /*  if (listenSock.getStatus() == 3)
-            nfds = select(max_fd + 1, &listened_fdset, &write_fdset, &exception_fdset, NULL);
-        else */
+
+
+        if (listenSock.getStatus() == 3)
+            {
+                nfds = select(max_fd + 1, &listened_fdset, &write_fdset, &exception_fdset, NULL);
+                listenSock.setStatus(2);
+            }
+        else
             nfds = select(max_fd + 1, &listened_fdset, &write_fdset, &exception_fdset, &timeout);
 
-        std::cout << "select returned " << nfds << std::endl;
+
+
+        //std::cout << "select returned " << nfds << std::endl;
 
 
         if (nfds < 0 || listenSock.getStatus() == 1) {
@@ -67,19 +74,12 @@ void NetworkThread::_net_routine() {
                 if (!running)
                     break;
             }
-            if (FD_ISSET(consolePipe.getOutputFd(), &write_fdset)) {
-                int command = consolePipe.readInt();
-                runCommand(command);
-                if (!running)
-                    break;
-            }
             if (FD_ISSET(listenSock.getSockFd(), &exception_fdset)) {
                 //TODO handle listenSock exceptions
             }
             if (FD_ISSET(listenSock.getSockFd(), &listened_fdset))
                 acceptNewConnection();
-            if (FD_ISSET(listenSock.getSockFd(), &write_fdset))
-                acceptNewConnection();
+            
             connMgr.readAll(&listened_fdset, &exception_fdset);
             connMgr.writeAll(&write_fdset, &exception_fdset);
         }
@@ -96,19 +96,18 @@ void NetworkThread::acceptNewConnection() {
     pthread_t thrd;
     pthread_create(&thrd, NULL, &Connection::executor_routine, args);
     pthread_detach(thrd);
-
     std::cout << "Added client #" << connection_id << std::endl;
 }
 
 int NetworkThread::initFdSets() {
     int max_fd = connMgr.getConnectionsFdSet(&listened_fdset, &write_fdset, &exception_fdset);
+    if (max_fd>0)
+        listenSock.setStatus(3);
 
     int listen_sock_fd = listenSock.getSockFd();
     int console_fd = consolePipe.getOutputFd();
     FD_SET(listen_sock_fd, &listened_fdset);
     FD_SET(console_fd, &listened_fdset);
-    FD_SET(listen_sock_fd, &write_fdset);
-    FD_SET(console_fd, &write_fdset);
     FD_SET(listen_sock_fd, &exception_fdset);
     FD_SET(console_fd, &exception_fdset);
 

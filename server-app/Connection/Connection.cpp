@@ -17,6 +17,7 @@ Connection::Connection(Socket nSock) : in_buffer(1024, 0), out_buffer(1024, 0), 
 
 void Connection::readReceivedData() {
 
+
     if(readbytesleft == 0)
         switchReadState();
 
@@ -38,7 +39,7 @@ void Connection::readReceivedData() {
     readoffs += readbytes;
     readbytesleft -= readbytes;
 
-    if(readbytesleft == 0)
+    if(readbytesleft == 0 and state==RMES)
         switchReadState();
 
 
@@ -64,7 +65,6 @@ void Connection::sendData() {
 void Connection::switchReadState() {
     switch (state) {
         case IDLE:
-
             state = RTYP;
             readbytesleft = sizeof(int32_t);
             break;
@@ -142,7 +142,6 @@ void Connection::handleRequest(Request request) {
     switch(reqcode) {
         case ANSW:
             mockAnswer();
-            readyToSend = true;
             break;
 
         case TERM:
@@ -181,5 +180,5 @@ void Connection::deserialize() {
 }
 
 bool Connection::isReadyToSend() const {
-    return readyToSend;
+    return outMessageQueue.not_empty();
 }

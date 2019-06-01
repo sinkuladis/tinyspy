@@ -13,7 +13,7 @@ struct timeval ListeningSocket::initialize(struct timeval time_left, int domain,
     struct timeval timeout;
 
     timeout = {
-            .tv_sec = 4,
+            .tv_sec = 10,
             .tv_usec = 0
     };
 

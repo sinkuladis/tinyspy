@@ -17,9 +17,9 @@ int ConnectionManager::getConnectionsFdSet(fd_set *listen, fd_set *send, fd_set 
         Connection& connection = item.second;
         fd = connection.getSock().getSockFd();
         FD_SET(fd, listen );
+        FD_SET(fd, send);
         FD_SET(fd, exc);
-        if(connection.isReadyToSend())
-            FD_SET(fd, send);
+
 
         max_fd = fd > max_fd ? fd : max_fd;
     }
@@ -88,7 +88,7 @@ void ConnectionManager::writeAll(fd_set *write, fd_set *exc) {
         if(FD_ISSET(conn_sock_fd, exc)) {
             //TODO handle socket exception
         }
-        if(FD_ISSET(conn_sock_fd, write)) {
+        if(FD_ISSET(conn_sock_fd, write) && conn.isReadyToSend()) {
             try {
                 conn.sendData();
             }catch (ConnectionTerminationException e){

@@ -25,6 +25,7 @@ public:
     int32_t get_message_size();
     int32_t get_messages_num();
     int32_t push_offset(int32_t);
+    int32_t not_empty() const;
 };
 
 
