@@ -15,7 +15,10 @@
 #include "../Request/RequestQueue.h"
 #include "../OutMessageQueue/OutMessageQueue.h"
 #include "../OutMessage/OutMessage.h"
+#include "executor_args.h"
 
+class ConnectionManager;
+struct executor_args;
 
 class Connection {
 protected:
@@ -27,41 +30,35 @@ protected:
     std::vector<char> out_buffer;
     RequestQueue requestQueue;
     OutMessageQueue outMessageQueue;
+
     int state;
     int readbytesleft;
     int readoffs;
-    int writebytesleft;
-    int writeoffs;
-
     bool readyToSend;
 
     void handleRequest(Request request);
     void mockAnswer();
     void terminate();
+    static void* executor_routine(void *executor_args_);
 
 public:
     Connection(Socket nSock);
-    ~Connection() { sock.shut(); }
+    ~Connection();
 
     void readReceivedData();
     void sendData();
-    void writeDataToSend(char*);
-    void printMessage() { std::cout<<"Client #"<<getId()<<" said "<< in_buffer.data()<<std::endl; }
+    void printMessage();
 
-    Socket getSock() { return sock;}
+    Socket getSock();
     RequestQueue &getRequestQueue() ;
 
-    //testowa metoda, tymczasowo id polaczenia to zwiazany z jego gniazdem file descriptor, unikalny dla polaczenia w trakcie jego dzialania
     int getId() { return sock.getSockFd(); }
-    static void* executor_routine(void*conn_sock);
+
+    static Connection & startExecutor(executor_args *args);
 
     void switchReadState();
 
     bool isReadyToSend() const;
-
-    void setBytesLeft();
-
-    void readtype();
 
     void deserialize();
 };

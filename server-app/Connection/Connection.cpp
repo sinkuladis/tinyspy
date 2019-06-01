@@ -10,14 +10,12 @@
 #include "../Exception/ConnectionTerminationException.h"
 #include "ConnectionState.h"
 
-Connection::Connection(Socket nSock) : in_buffer(1024, 0), out_buffer(1024, 0), readbytesleft(0), readyToSend(false) {
+Connection::Connection(Socket nSock) : in_buffer(1024, 0), out_buffer(1024, 0), readbytesleft(0), readoffs(0), readyToSend(false) {
     sock = nSock;
     state = IDLE;
 }
 
 void Connection::readReceivedData() {
-
-
     if(readbytesleft == 0)
         switchReadState();
 
@@ -41,13 +39,10 @@ void Connection::readReceivedData() {
 
     if(readbytesleft == 0 and state==RMES)
         switchReadState();
-
-
 }
 
 
 void Connection::sendData() {
-
     int writebytes = 0;
 
     void* msg=outMessageQueue.get_message();
@@ -59,7 +54,6 @@ void Connection::sendData() {
         throw ConnectionTerminationException();
     else if(size==writebytes)
         readyToSend = false;
-
 }
 
 void Connection::switchReadState() {
@@ -76,7 +70,7 @@ void Connection::switchReadState() {
             state = RMES;
             in_buffer.clear();
             readbytesleft = ntohl(msize);
-            in_buffer.resize(readbytesleft);
+            in_buffer.reserve(readbytesleft);
             break;
         case RMES:
             requestQueue.enqueue(DECYPHER);
@@ -85,10 +79,6 @@ void Connection::switchReadState() {
             break;
     }
     readoffs = 0;
-}
-
-void Connection::writeDataToSend(char *data) {
-    sock.write(data, 0);
 }
 
 void Connection::mockAnswer() {
@@ -115,18 +105,13 @@ void Connection::mockAnswer() {
     std::string msg=s+output;
 
     outMessageQueue.add_message(OutMessage(msg));
-    /*sock.write(&msgType);
-    sock.write(&msgLen);
-    sock.write(output.data(), output.length());*/
 }
 
-void *Connection::executor_routine(void *args_) {
-    struct executor_args *args = static_cast<executor_args*>(args_);
+void *Connection::executor_routine(void *executor_args_) {
+    struct executor_args *args = static_cast<executor_args*>(executor_args_);
     ConnectionManager& connMgr = *(args->connMgr);
-    Connection conn(args->sock);
-    free(args);
-
-    connMgr.collect(conn);
+    Connection& conn = std::ref(*(args->newConn));
+    free(executor_args_);
 
     while(conn.state != SHUT) {
         //w tym momencie polecenia z konsolki dotyczące stanu połączenia będą obsługiwane jako requesty i wszystko zostaje ułatwione 500x
@@ -135,6 +120,7 @@ void *Connection::executor_routine(void *args_) {
     }
 
     connMgr.unregister(conn.getId());
+    delete &conn;
 }
 
 void Connection::handleRequest(Request request) {
@@ -176,9 +162,25 @@ void Connection::deserialize() {
         msg = std::make_unique<AuthMessage>(input);
     mtype = -1;
     msize = -1;
+    //printMessage();
     requestQueue.enqueue(ANSW);
 }
 
 bool Connection::isReadyToSend() const {
     return outMessageQueue.not_empty();
 }
+
+Connection & Connection::startExecutor(executor_args *args) {
+    pthread_t thrd;
+    Connection *conn_ptr =  new Connection(args->sock);
+    args->newConn = conn_ptr;
+    pthread_create(&thrd, NULL, &Connection::executor_routine, args);
+    pthread_detach(thrd);
+    return std::ref(*conn_ptr);
+}
+
+Socket Connection::getSock() { return sock;}
+
+void Connection::printMessage() { std::cout<<"Client #"<<getId()<<" said "<< std::string(in_buffer.data()) <<std::endl; }
+
+Connection::~Connection() { sock.shut(); }

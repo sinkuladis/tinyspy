@@ -41,15 +41,11 @@ void NetworkThread::_net_routine() {
             .tv_usec = 0
     };
     while (running) {
-
-
         timeout = listenSock.initialize(timeout);
         if (listenSock.getStatus() != 1)
             max_fd = initFdSets();
 
-
-
-        if (listenSock.getStatus() == 3)
+        if (listenSock.getStatus() != 1)
             {
                 nfds = select(max_fd + 1, &listened_fdset, &write_fdset, &exception_fdset, NULL);
                 listenSock.setStatus(2);
@@ -57,10 +53,7 @@ void NetworkThread::_net_routine() {
         else
             nfds = select(max_fd + 1, &listened_fdset, &write_fdset, &exception_fdset, &timeout);
 
-
-
         //std::cout << "select returned " << nfds << std::endl;
-
 
         if (nfds < 0 || listenSock.getStatus() == 1) {
             //TODO handle error
@@ -93,9 +86,9 @@ void NetworkThread::acceptNewConnection() {
     struct executor_args *args = static_cast<executor_args*>(calloc(1,sizeof(struct executor_args)));
     args->connMgr = &connMgr;
     args->sock = newSock;
-    pthread_t thrd;
-    pthread_create(&thrd, NULL, &Connection::executor_routine, args);
-    pthread_detach(thrd);
+
+    Connection& newConnection = Connection::startExecutor(args);
+    connMgr.collect(newConnection);
     std::cout << "Added client #" << connection_id << std::endl;
 }
 
@@ -110,7 +103,6 @@ int NetworkThread::initFdSets() {
     FD_SET(console_fd, &listened_fdset);
     FD_SET(listen_sock_fd, &exception_fdset);
     FD_SET(console_fd, &exception_fdset);
-
 
     max_fd = std::max({max_fd, listen_sock_fd, console_fd});
 

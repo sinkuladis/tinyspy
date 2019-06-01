@@ -8,7 +8,8 @@ include_directories(server-app 3rdparty)
 
 link_directories(3rdparty)
 
-add_library(Communication SHARED server-app/Pipes/Pipe.h server-app/Pipes/Pipe.cpp
+add_library(Communication SHARED
+		server-app/Pipes/Pipe.h server-app/Pipes/Pipe.cpp
 		server-app/Socket/Socket.h server-app/Socket/Socket.cpp
 		server-app/Socket/ListeningSocket.h server-app/Socket/ListeningSocket.cpp
 		server-app/Connection/Connection.h server-app/Connection/Connection.cpp

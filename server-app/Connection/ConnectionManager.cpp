@@ -20,7 +20,6 @@ int ConnectionManager::getConnectionsFdSet(fd_set *listen, fd_set *send, fd_set 
         FD_SET(fd, send);
         FD_SET(fd, exc);
 
-
         max_fd = fd > max_fd ? fd : max_fd;
     }
     return max_fd;
@@ -55,15 +54,20 @@ void ConnectionManager::shutdownAllNow() {
 void ConnectionManager::unregister(int id) {
     std::unique_lock<std::mutex> lock(mutex);
     connections.erase(id);
+    std::cout << std::endl << std::endl << "unregistered client " << id << std::endl << std::endl;
 }
 
 void ConnectionManager::collect(Connection& me) {
     std::unique_lock<std::mutex> lock(mutex);
+    //std::cout << std::endl << "connectionMgr.collect()\n\tid: " << me.getId() << "\t" << std::endl << std::endl;
+
     connections.insert({me.getId(), me});
 }
 
 void ConnectionManager::readAll(fd_set *listen, fd_set *exc) {
     std::unique_lock<std::mutex> lock(mutex);
+    //std::cout << std::endl << "connectionMgr.readAll()\n\tSize: " << connections.size() << "\t" << std::endl << std::endl;
+
     for(auto it = connections.begin() ; it != connections.end() ; ++it) {
         Connection& conn = it->second;
         int conn_sock_fd = conn.getSock().getSockFd();
@@ -97,3 +101,8 @@ void ConnectionManager::writeAll(fd_set *write, fd_set *exc) {
         }
     }
 }
+
+ConnectionManager::ConnectionManager()
+    : connections(),
+    mutex()
+{}

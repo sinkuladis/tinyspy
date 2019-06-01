@@ -13,6 +13,9 @@
 #include <unordered_map>
 #include "Connection.h"
 
+class Connection;
+struct executor_args;
+
 class ConnectionManager{
 private:
     std::mutex mutex;
@@ -20,10 +23,7 @@ private:
     void _shutdownNow(int connection_id) const;
 
 public:
-    ConnectionManager()
-    : connections(),
-    mutex()
-    {}
+    ConnectionManager();
   
     ~ConnectionManager();
 
