@@ -69,9 +69,9 @@ void NetworkThread::_net_routine() {
             }
             if (FD_ISSET(listenSock.getSockFd(), &listened_fdset))
                 acceptNewConnection();
-            
-            connMgr.readAll(&listened_fdset, &exception_fdset);
-            connMgr.writeAll(&write_fdset, &exception_fdset);
+
+            connMgr.readAll();
+            connMgr.writeAll();
         }
     }
     std::cout << "Connection thread exited" << std::endl;
@@ -90,7 +90,7 @@ void NetworkThread::acceptNewConnection() {
 }
 
 int NetworkThread::initFdSets() {
-    int max_fd = connMgr.getConnectionsFdSet(&listened_fdset, &write_fdset, &exception_fdset);
+    int max_fd = connMgr.getConnectionsFdSet();
 
     int listen_sock_fd = listenSock.getSockFd();
     int console_fd = consolePipe.getOutputFd();

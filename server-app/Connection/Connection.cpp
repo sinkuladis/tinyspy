@@ -10,7 +10,7 @@
 #include "../Exception/ConnectionTerminationException.h"
 #include "ConnectionState.h"
 
-Connection::Connection(Socket nSock) : in_buffer(1024, 0), out_buffer(1024, 0), readbytesleft(0), readoffs(0), readyToSend(false) {
+Connection::Connection(Socket nSock, ConnectionManager& manager) : in_buffer(1024, 0), out_buffer(1024, 0), readbytesleft(0), readoffs(0), myManager(manager){
     sock = nSock;
     state = IDLE;
 }
@@ -52,8 +52,8 @@ void Connection::sendData() {
 
     if(writebytes == -1)
         throw ConnectionTerminationException();
-    else if(size==writebytes)
-        readyToSend = false;
+    //else if(size!=writebytes)
+    //    myManager.addSender(*this);
 }
 
 void Connection::switchReadState() {
@@ -105,6 +105,7 @@ void Connection::mockAnswer() {
     std::string msg=s+output;
 
     outMessageQueue.add_message(OutMessage(msg));
+    myManager.addSender(*this);
 }
 
 void *Connection::executor_routine(void *executor_args_) {
@@ -114,12 +115,10 @@ void *Connection::executor_routine(void *executor_args_) {
     free(executor_args_);
 
     while(conn.state != SHUT) {
-        //w tym momencie polecenia z konsolki dotyczące stanu połączenia będą obsługiwane jako requesty i wszystko zostaje ułatwione 500x
         Request r = conn.requestQueue.getNext();
         conn.handleRequest(r);
     }
 
-    connMgr.unregister(conn.getId());
     delete &conn;
 }
 
@@ -135,7 +134,6 @@ void Connection::handleRequest(Request request) {
             break;
 
         case DECYPHER:
-            //na razie nie ma co robić
             requestQueue.enqueue(DESERIALIZE);
             break;
 
@@ -162,7 +160,6 @@ void Connection::deserialize() {
         msg = std::make_unique<AuthMessage>(input);
     mtype = -1;
     msize = -1;
-    //printMessage();
     requestQueue.enqueue(ANSW);
 }
 
@@ -172,7 +169,7 @@ bool Connection::isReadyToSend() const {
 
 Connection & Connection::startExecutor(executor_args *args) {
     pthread_t thrd;
-    Connection *conn_ptr =  new Connection(args->sock);
+    Connection *conn_ptr =  new Connection(args->sock, std::ref(*args->connMgr));
     args->newConn = conn_ptr;
     pthread_create(&thrd, NULL, &Connection::executor_routine, args);
     pthread_detach(thrd);
@@ -183,4 +180,7 @@ Socket Connection::getSock() { return sock;}
 
 void Connection::printMessage() { std::cout<<"Client #"<<getId()<<" said "<< std::string(in_buffer.data()) <<std::endl; }
 
-Connection::~Connection() { sock.shut(); }
+Connection::~Connection() {
+    myManager.unregister(getSock().getSockFd());
+    sock.shut();
+}

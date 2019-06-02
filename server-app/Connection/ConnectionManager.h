@@ -22,12 +22,18 @@ private:
     std::unordered_map<int,Connection&> connections;
     void _shutdownNow(int connection_id) const;
 
+    fd_set* listened_fdset;
+    fd_set* write_fdset;
+    fd_set* exception_fdset;
+
 public:
     ConnectionManager();
-  
+
+    void setFdSets(fd_set* listened_fdset, fd_set* write_fdset, fd_set* exception_fdset);
+
     ~ConnectionManager();
 
-    int getConnectionsFdSet(fd_set *listen, fd_set *send, fd_set *exc);
+    int getConnectionsFdSet();
 
     void shutdownNow(int);
     void shutdownAllNow();
@@ -35,8 +41,10 @@ public:
     void collect(Connection&);
     void unregister(int);
 
-    void readAll(fd_set* listen, fd_set* exc);
-    void writeAll(fd_set* write, fd_set* exc);
+    void addSender(Connection& c);
+
+    void readAll();
+    void writeAll();
 };
 
 

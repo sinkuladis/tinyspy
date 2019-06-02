@@ -34,7 +34,8 @@ protected:
     int state;
     int readbytesleft;
     int readoffs;
-    bool readyToSend;
+
+    ConnectionManager& myManager;
 
     void handleRequest(Request request);
     void mockAnswer();
@@ -42,7 +43,7 @@ protected:
     static void* executor_routine(void *executor_args_);
 
 public:
-    Connection(Socket nSock);
+    Connection(Socket nSock, ConnectionManager& manager);
     ~Connection();
 
     void readReceivedData();

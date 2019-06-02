@@ -7,18 +7,19 @@
 #include <Exception/ConnectionTerminationException.h>
 #include "ConnectionManager.h"
 
-int ConnectionManager::getConnectionsFdSet(fd_set *listen, fd_set *send, fd_set *exc) {
+int ConnectionManager::getConnectionsFdSet() {
     std::unique_lock<std::mutex> lock(mutex);
-    FD_ZERO(listen);
-    FD_ZERO(send);
-    FD_ZERO(exc);
+    FD_ZERO(listened_fdset);
+    FD_ZERO(write_fdset);
+    FD_ZERO(exception_fdset);
     int max_fd = -1, fd;
-    for( auto& item : connections ){
+    for( auto& item : connections ) {
         Connection& connection = item.second;
         fd = connection.getSock().getSockFd();
-        FD_SET(fd, listen );
-        FD_SET(fd, send);
-        FD_SET(fd, exc);
+        FD_SET(fd, listened_fdset);
+        if(connection.isReadyToSend())
+            FD_SET(fd, write_fdset);
+        FD_SET(fd, exception_fdset);
 
         max_fd = fd > max_fd ? fd : max_fd;
     }
@@ -59,23 +60,21 @@ void ConnectionManager::unregister(int id) {
 
 void ConnectionManager::collect(Connection& me) {
     std::unique_lock<std::mutex> lock(mutex);
-    //std::cout << std::endl << "connectionMgr.collect()\n\tid: " << me.getId() << "\t" << std::endl << std::endl;
-
     connections.insert({me.getId(), me});
 }
 
-void ConnectionManager::readAll(fd_set *listen, fd_set *exc) {
+void ConnectionManager::readAll() {
     std::unique_lock<std::mutex> lock(mutex);
-    //std::cout << std::endl << "connectionMgr.readAll()\n\tSize: " << connections.size() << "\t" << std::endl << std::endl;
 
     for(auto it = connections.begin() ; it != connections.end() ; ++it) {
         Connection& conn = it->second;
         int conn_sock_fd = conn.getSock().getSockFd();
-        if(FD_ISSET(conn_sock_fd, exc)) {
+        if(FD_ISSET(conn_sock_fd, exception_fdset)) {
             //TODO handle socket exception
         }
-        if(FD_ISSET(conn_sock_fd, listen)) {
+        if(FD_ISSET(conn_sock_fd, listened_fdset)) {
             try {
+                std::cout << "reading " << conn_sock_fd <<std::endl;
                 conn.readReceivedData();
             }catch (ConnectionTerminationException e){
                 _shutdownNow(conn.getId());
@@ -84,20 +83,16 @@ void ConnectionManager::readAll(fd_set *listen, fd_set *exc) {
     }
 }
 
-void ConnectionManager::writeAll(fd_set *write, fd_set *exc) {
+void ConnectionManager::writeAll() {
     std::unique_lock<std::mutex> lock(mutex);
     for(auto it = connections.begin() ; it != connections.end() ; ++it) {
         Connection& conn = it->second;
         int conn_sock_fd = conn.getSock().getSockFd();
-        if(FD_ISSET(conn_sock_fd, exc)) {
+        if(FD_ISSET(conn_sock_fd, exception_fdset)) {
             //TODO handle socket exception
         }
-        if(FD_ISSET(conn_sock_fd, write) && conn.isReadyToSend()) {
-            try {
-                conn.sendData();
-            }catch (ConnectionTerminationException e){
-                _shutdownNow(conn.getId());
-            }
+        if(FD_ISSET(conn_sock_fd, write_fdset)) {
+            conn.sendData();
         }
     }
 }
@@ -106,3 +101,16 @@ ConnectionManager::ConnectionManager()
     : connections(),
     mutex()
 {}
+
+void ConnectionManager::setFdSets(fd_set *listen, fd_set *write, fd_set *exception) {
+    std::unique_lock<std::mutex> lock(mutex);
+    listened_fdset = listen;
+    write_fdset = write;
+    exception_fdset = exception;
+}
+
+void ConnectionManager::addSender(Connection &c) {
+    std::unique_lock<std::mutex> lock(mutex);
+    std::cout << c.getId() << "wants to send\n";
+    FD_SET(c.getSock().getSockFd(), write_fdset);
+}
