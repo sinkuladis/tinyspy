@@ -7,8 +7,11 @@
 
 
 enum ConnectionState {
-    ONGOING,
-    SHUTDOWN
+    IDLE,
+    RTYP,
+    RSIZ,
+    RMES,
+    SHUT
 };
 
 

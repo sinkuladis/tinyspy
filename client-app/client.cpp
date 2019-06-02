@@ -4,7 +4,7 @@
 #include <netdb.h>
 #include <cstring>
 #include <unistd.h>
-#include <Serialization/AuthMessage.h>
+#include "Serialization/AuthMessage.h"
 #include "Serialization/DataMessage.h"
 
 struct addrinfo *get_sockaddr(const char *hostname, const char *port);
@@ -24,15 +24,18 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    struct addrinfo *results = get_sockaddr(argv[1], argv[2]);
-    int sockfd = open_connection(results);
-    int number = atoi(argv[3]);
-    for (int i = 0; i < number; ++i) {
-        sendMockData(sockfd);
-        numbytes = readMockData(sockfd);
-        if (numbytes == -1) {
-            perror("recv");
-            exit(1);
+    int j = 15;
+    while(j--) {
+        struct addrinfo *results = get_sockaddr(argv[1], argv[2]);
+        int sockfd = open_connection(results);
+        int number = atoi(argv[3]);
+        for (int i = 0; i < number; ++i) {
+            sendMockData(sockfd);
+            numbytes = readMockData(sockfd);
+            if (numbytes == -1) {
+                perror("recv");
+                exit(1);
+            }
         }
     }
     return 0;

@@ -8,7 +8,7 @@
 
 enum CommandCode {
     UNAVAILABLE,
-    SHUTDOWN
+    SHUT
 };
 
 

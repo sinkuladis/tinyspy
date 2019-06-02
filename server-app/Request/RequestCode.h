@@ -8,6 +8,8 @@
 
 enum RequestCode {
     TERM,
+    DECYPHER,
+    DESERIALIZE,
     ANSW,
 };
 

@@ -18,11 +18,15 @@ private:
     ConnectionManager& connMgr;
     ListeningSocket listenSock;
     fd_set listened_fdset;
+    fd_set write_fdset;
     fd_set exception_fdset;
     Pipe& consolePipe;
     int max_pending_conns;
     std::mutex run_mutex;
-    static void* conn_routine(void*);
+
+    static void* _run_net_routine(void *);
+    void _net_routine();
+
     int initFdSets();
     int listening_port;
 

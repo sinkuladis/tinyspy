@@ -12,6 +12,6 @@ void Thread::shutdown() {
 void Thread::runCommand(int commandCode) {
     switch(commandCode) {
         case UNAVAILABLE: break;
-        case SHUTDOWN: shutdown(); break;
+        case SHUT: shutdown(); break;
     }
 }

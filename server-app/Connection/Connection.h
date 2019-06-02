@@ -13,40 +13,55 @@
 #include "../Socket/Socket.h"
 #include "../Request/Request.h"
 #include "../Request/RequestQueue.h"
+#include "../OutMessageQueue/OutMessageQueue.h"
+#include "../OutMessage/OutMessage.h"
+#include "executor_args.h"
+
+class ConnectionManager;
+struct executor_args;
 
 class Connection {
 protected:
     Socket sock;
+    int32_t msize;
+    int32_t mtype;
+
     std::vector<char> in_buffer;
     std::vector<char> out_buffer;
     RequestQueue requestQueue;
+    OutMessageQueue outMessageQueue;
+
     int state;
+    int readbytesleft;
+    int readoffs;
+
+    ConnectionManager& myManager;
+
     void handleRequest(Request request);
     void mockAnswer();
     void terminate();
+    static void* executor_routine(void *executor_args_);
+
 public:
-    Connection(Socket nSock);
-    ~Connection() { sock.shut(); }
+    Connection(Socket nSock, ConnectionManager& manager);
+    ~Connection();
 
-    //TODO tutaj bedzie trzeba przeczytac
-    //  1* rozmiar odebranej zserializowanej wiadomosci
-    //  2* cala jej reszte
-    //  obie rzeczy z uzyciem metody z klasy Socket, ktora zadba o przeczytanie zadanej liczby bajtow za kazdym razem
-    //  tak, ze to odpalac bedziemy w NetworkThread
-    //  a nastepnie bedziemy dawac znac warstwie deserializujacej, ze zadane connection przyslalo dane do deserializacji
     void readReceivedData();
+    void sendData();
+    void printMessage();
 
-
-    void writeDataToSend(char*);
-    void printMessage() {std::cout<<"Client #"<<getId()<<" said "<< in_buffer.data()<<std::endl;}
-
-    Socket getSock() { return sock;}
+    Socket getSock();
     RequestQueue &getRequestQueue() ;
 
-    //testowa metoda, tymczasowo id polaczenia to zwiazany z jego gniazdem file descriptor, unikalny dla polaczenia w trakcie jego dzialania
-    int getId() {return sock.getSockFd(); }
-    static void* executor_routine(void*conn_sock);
+    int getId() { return sock.getSockFd(); }
 
+    static Connection & startExecutor(executor_args *args);
+
+    void switchReadState();
+
+    bool isReadyToSend() const;
+
+    void deserialize();
 };
 
 

@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <functional>
 
+
 struct timeval ListeningSocket::initialize(struct timeval time_left, int domain, int type) {
 
     struct timeval timeout;
@@ -34,13 +35,13 @@ struct timeval ListeningSocket::initialize(struct timeval time_left, int domain,
                     if(listen(max_connections)>=0)
                     {
                         if(setNonblocking()>=0)
-                            status=2;
+                            status=true;
                     }
                 }
             }
         }
     }
-    if(status!=1)
+    if(status==3)
     {
         timeout = {
                 .tv_sec = 0,
@@ -95,14 +96,14 @@ int ListeningSocket::getSockFd() const {
     return sock_fd;
 }
 
-int ListeningSocket::getStatus() const {
+int ListeningSocket::isReady() const {
     return status;
 }
 
 Socket ListeningSocket::accept(int new_sock_domain, int new_sock_type) {
     Socket newSock;
     socklen_t addr_len = sizeof( newSock.sock_addr );
-    int new_sockfd = ::accept(sock_fd,( struct sockaddr * ) &newSock.sock_addr, &addr_len );
+    int new_sockfd = ::accept4(sock_fd,( struct sockaddr * ) &newSock.sock_addr, &addr_len, SOCK_NONBLOCK);
     if(new_sockfd <= 0 ) {
         perror("cannot create a new socket");
     }else {

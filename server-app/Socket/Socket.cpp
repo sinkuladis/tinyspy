@@ -7,9 +7,7 @@
 #include <unistd.h>
 #include <functional>
 
-
-//nie!!! wrzucac do destruktora
-void Socket::shut() { //albo w destruktorze
+void Socket::shut() {
     std::cout << "Zamykanie socketu: " << sock_fd << std::endl;
     shutdown(sock_fd, SHUT_RDWR);
 }
@@ -26,12 +24,12 @@ int Socket::getSockFd() const {
     return sock_fd;
 }
 
-int Socket::write(const char *inbuf, int nbytes) {
-    return RWOperation::write(sock_fd, inbuf, nbytes);
+int Socket::write(const void *inbuf, int nbytes) {
+    return ::write(sock_fd, inbuf, nbytes);
 }
 
-int Socket::read(char* outbuf, int nbytes) {
-    return RWOperation::read(sock_fd, outbuf, nbytes);
+int Socket::read(void *outbuf, int nbytes) {
+    return ::read(sock_fd, outbuf, nbytes);
 }
 
 
