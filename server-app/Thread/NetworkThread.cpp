@@ -42,20 +42,17 @@ void NetworkThread::_net_routine() {
     };
     while (running) {
         timeout = listenSock.initialize(timeout);
-        if (listenSock.getStatus() != 1)
+        if (listenSock.isReady())
             max_fd = initFdSets();
 
-        if (listenSock.getStatus() != 1)
+        if (listenSock.isReady())
             {
                 nfds = select(max_fd + 1, &listened_fdset, &write_fdset, &exception_fdset, NULL);
-                listenSock.setStatus(2);
             }
         else
             nfds = select(max_fd + 1, &listened_fdset, &write_fdset, &exception_fdset, &timeout);
 
-        //std::cout << "select returned " << nfds << std::endl;
-
-        if (nfds < 0 || listenSock.getStatus() == 1) {
+        if (nfds < 0 || !listenSock.isReady()) {
             //TODO handle error
         } else {
             if (FD_ISSET(consolePipe.getOutputFd(), &exception_fdset)) {
@@ -94,8 +91,6 @@ void NetworkThread::acceptNewConnection() {
 
 int NetworkThread::initFdSets() {
     int max_fd = connMgr.getConnectionsFdSet(&listened_fdset, &write_fdset, &exception_fdset);
-    if (max_fd>0)
-        listenSock.setStatus(3);
 
     int listen_sock_fd = listenSock.getSockFd();
     int console_fd = consolePipe.getOutputFd();

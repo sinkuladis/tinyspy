@@ -35,7 +35,7 @@ struct timeval ListeningSocket::initialize(struct timeval time_left, int domain,
                     if(listen(max_connections)>=0)
                     {
                         if(setNonblocking()>=0)
-                            status=2;
+                            status=true;
                     }
                 }
             }
@@ -96,12 +96,8 @@ int ListeningSocket::getSockFd() const {
     return sock_fd;
 }
 
-int ListeningSocket::getStatus() const {
+int ListeningSocket::isReady() const {
     return status;
-}
-
-void ListeningSocket::setStatus(int s) {
-    status=s;
 }
 
 Socket ListeningSocket::accept(int new_sock_domain, int new_sock_type) {
