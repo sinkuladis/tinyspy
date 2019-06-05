@@ -34,6 +34,7 @@ void* NetworkThread::_run_net_routine(void *netThreadPtr) {
 }
 
 void NetworkThread::_net_routine() {
+    connMgr.setFdSets(&listened_fdset, &write_fdset, &exception_fdset);
     int nfds, max_fd;
     struct timeval timeout;
     timeout = {
@@ -42,14 +43,10 @@ void NetworkThread::_net_routine() {
     };
     while (running) {
         timeout = listenSock.initialize(timeout);
-        if (listenSock.isReady())
+        if (listenSock.isReady()) {
             max_fd = initFdSets();
-
-        if (listenSock.isReady())
-            {
-                nfds = select(max_fd + 1, &listened_fdset, &write_fdset, &exception_fdset, NULL);
-            }
-        else
+            nfds = select(max_fd + 1, &listened_fdset, &write_fdset, &exception_fdset, NULL);
+        } else
             nfds = select(max_fd + 1, &listened_fdset, &write_fdset, &exception_fdset, &timeout);
 
         if (nfds < 0 || !listenSock.isReady()) {
