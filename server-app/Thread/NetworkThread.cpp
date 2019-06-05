@@ -46,6 +46,7 @@ void NetworkThread::_net_routine() {
         if (listenSock.isReady()) {
             max_fd = initFdSets();
             nfds = select(max_fd + 1, &listened_fdset, &write_fdset, &exception_fdset, NULL);
+
         } else
             nfds = select(max_fd + 1, &listened_fdset, &write_fdset, &exception_fdset, &timeout);
 
@@ -62,7 +63,7 @@ void NetworkThread::_net_routine() {
                     break;
             }
             if (FD_ISSET(listenSock.getSockFd(), &exception_fdset)) {
-                //TODO handle listenSock exceptions
+                listenSock.setUnready();
             }
             if (FD_ISSET(listenSock.getSockFd(), &listened_fdset))
                 acceptNewConnection();
@@ -76,6 +77,7 @@ void NetworkThread::_net_routine() {
 
 void NetworkThread::acceptNewConnection() {
     Socket newSock = listenSock.accept();
+    if (!listenSock.isReady()) return;
     int connection_id = newSock.getSockFd();
     struct executor_args *args = static_cast<executor_args*>(calloc(1,sizeof(struct executor_args)));
     args->connMgr = &connMgr;
