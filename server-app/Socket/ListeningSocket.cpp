@@ -9,51 +9,39 @@
 
 
 struct timeval ListeningSocket::initialize(struct timeval time_left, int domain, int type) {
-
     struct timeval timeout;
-
     timeout = {
             .tv_sec = 10,
             .tv_usec = 0
     };
 
     if(status==1) {
-        if(time_left.tv_usec!=0||time_left.tv_sec!=0)
-        {
+        if (time_left.tv_usec != 0 || time_left.tv_sec != 0) {
             return time_left;
-        }
-        else {
+        } else {
             this->domain = domain;
             this->type = type;
             sock_fd = socket(domain, type, 0);
+
             if (sock_fd < 0) {
                 perror("ERROR while creating a socket");
             } else {
                 std::cout << "Socket created: " << sock_fd << std::endl;
-                if(bind()>=0)
+
+                if (bind() >= 0
+                    && listen(max_connections) >= 0
+                    && setNonblocking() >= 0)
                 {
-                    if(listen(max_connections)>=0)
-                    {
-                        if(setNonblocking()>=0)
-                            status=true;
-                    }
-                }
+                    status = 3;
+                } else
+                    status = 0;
             }
         }
-    }
-    if(status==3)
-    {
-        timeout = {
-                .tv_sec = 0,
-                .tv_usec = 0
-        };
-        return  timeout;
-    }
+    } else if(status==3)
+        timeout.tv_sec = 0;
     return timeout;
-
 }
 
-//nie!!! wrzucac do destruktora
 void ListeningSocket::shut() {
     std::cout << "Zamykanie socketu: " << sock_fd << std::endl;
     shutdown( sock_fd, SHUT_RDWR );
@@ -97,7 +85,7 @@ int ListeningSocket::getSockFd() const {
 }
 
 int ListeningSocket::isReady() const {
-    return status;
+    return status == 3;
 }
 
 Socket ListeningSocket::accept(int new_sock_domain, int new_sock_type) {
@@ -113,4 +101,13 @@ Socket ListeningSocket::accept(int new_sock_domain, int new_sock_type) {
     }
     return newSock;
 }
+
+void ListeningSocket::setBroken() {
+    status = 0;
+}
+
+void ListeningSocket::setReady() {
+    status = 3;
+}
+
 

@@ -21,6 +21,7 @@ private:
     fd_set write_fdset;
     fd_set exception_fdset;
     Pipe& consolePipe;
+    Pipe& managerPipe;
     int max_pending_conns;
     std::mutex run_mutex;
 
@@ -32,9 +33,10 @@ private:
 
     void acceptNewConnection();
 public:
-    NetworkThread(std::reference_wrapper<Pipe> nConsolePipe, int n_max_connections, std::reference_wrapper<ConnectionManager> newConnColl, int port)
+    NetworkThread(std::reference_wrapper<Pipe> nManagerPipe, std::reference_wrapper<Pipe> nConsolePipe, int n_max_connections, std::reference_wrapper<ConnectionManager> newConnColl, int port)
     : Thread(),
       consolePipe(nConsolePipe),
+      managerPipe(nManagerPipe),
       max_pending_conns(n_max_connections),
       listenSock(ListeningSocket(n_max_connections, port)),
       connMgr(newConnColl),

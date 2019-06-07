@@ -52,8 +52,8 @@ void Connection::sendData() {
 
     if(writebytes == -1)
         throw ConnectionTerminationException();
-    //else if(size!=writebytes)
-    //    myManager.addSender(*this);
+    else if(size!=writebytes)
+        myManager.addSender(*this);
 }
 
 void Connection::switchReadState() {
@@ -160,6 +160,7 @@ void Connection::deserialize() {
         msg = std::make_unique<AuthMessage>(input);
     mtype = -1;
     msize = -1;
+    //std::cout<<msg->debugString()<<std::endl;
     requestQueue.enqueue(ANSW);
 }
 

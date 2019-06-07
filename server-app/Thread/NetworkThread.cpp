@@ -49,7 +49,7 @@ void NetworkThread::_net_routine() {
         } else
             nfds = select(max_fd + 1, &listened_fdset, &write_fdset, &exception_fdset, &timeout);
 
-        if (nfds < 0 || !listenSock.isReady()) {
+        if (nfds < 0) {
             //TODO handle error
         } else {
             if (FD_ISSET(consolePipe.getOutputFd(), &exception_fdset)) {
@@ -61,14 +61,22 @@ void NetworkThread::_net_routine() {
                 if (!running)
                     break;
             }
-            if (FD_ISSET(listenSock.getSockFd(), &exception_fdset)) {
+
+            if (FD_ISSET(managerPipe.getOutputFd(), &exception_fdset)) {
+                //TODO handle console exceptions
+            }
+            if (FD_ISSET(managerPipe.getOutputFd(), &listened_fdset)) {
+                connMgr.writeAll();
+            }
+
+            if (!listenSock.isReady() || FD_ISSET(listenSock.getSockFd(), &exception_fdset)) {
                 //TODO handle listenSock exceptions
+                listenSock.setBroken();
             }
             if (FD_ISSET(listenSock.getSockFd(), &listened_fdset))
                 acceptNewConnection();
 
             connMgr.readAll();
-            connMgr.writeAll();
         }
     }
     std::cout << "Connection thread exited" << std::endl;
@@ -91,12 +99,17 @@ int NetworkThread::initFdSets() {
 
     int listen_sock_fd = listenSock.getSockFd();
     int console_fd = consolePipe.getOutputFd();
+    int manager_fd = managerPipe.getOutputFd();
+
     FD_SET(listen_sock_fd, &listened_fdset);
     FD_SET(console_fd, &listened_fdset);
+    FD_SET(manager_fd, &listened_fdset);
+
     FD_SET(listen_sock_fd, &exception_fdset);
     FD_SET(console_fd, &exception_fdset);
+    FD_SET(manager_fd, &exception_fdset);
 
-    max_fd = std::max({max_fd, listen_sock_fd, console_fd});
+    max_fd = std::max({max_fd, listen_sock_fd, console_fd, manager_fd});
 
     return max_fd;
 }

@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <unordered_map>
 #include "Connection.h"
+#include "Pipes/Pipe.h"
 
 class Connection;
 struct executor_args;
@@ -21,13 +22,14 @@ private:
     std::mutex mutex;
     std::unordered_map<int,Connection&> connections;
     void _shutdownNow(int connection_id) const;
+    Pipe& networkPipe;
 
     fd_set* listened_fdset;
     fd_set* write_fdset;
     fd_set* exception_fdset;
 
 public:
-    ConnectionManager();
+    ConnectionManager(Pipe &networkThreadPipe_);
 
     void setFdSets(fd_set* listened_fdset, fd_set* write_fdset, fd_set* exception_fdset);
 

@@ -15,6 +15,7 @@
 class Server {
 private:
     Pipe consoleToNetworkPipe;
+    Pipe managerToNetworkPipe;
     NetworkThread networkThread;
     ConnectionManager connMgr;
     ConsoleHandler consoleHandler;

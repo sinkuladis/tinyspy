@@ -15,7 +15,7 @@ private:
     int domain;
     int type;
     int sock_fd;
-    bool status;
+    int status;
     int max_connections;
     sockaddr_in server_addr;
 
@@ -42,6 +42,9 @@ public:
     int getSockFd() const;
     int isReady() const;
     Socket accept(int new_sock_domain=AF_INET, int new_sock_type=SOCK_STREAM);
+
+    void setBroken();
+    void setReady();
 };
 
 #endif //TINYSPY_LISTENINGSOCKET_H

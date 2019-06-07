@@ -14,9 +14,10 @@ void Server::start() {
 
 Server::Server(int listening_port, int max_pend_conn)
         : consoleToNetworkPipe(Pipe()),
-          connMgr(),
+          managerToNetworkPipe(Pipe()),
+          connMgr(managerToNetworkPipe),
           consoleHandler(std::ref(consoleToNetworkPipe), std::ref(connMgr)),
-          networkThread( std::ref(consoleToNetworkPipe) , max_pend_conn, std::ref(connMgr),listening_port)
+          networkThread( std::ref(managerToNetworkPipe), std::ref(consoleToNetworkPipe) , max_pend_conn, std::ref(connMgr),listening_port)
 {
 
 }

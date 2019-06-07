@@ -5,6 +5,7 @@
 #include <functional>
 #include <unordered_map>
 #include <Exception/ConnectionTerminationException.h>
+#include <Pipes/Pipe.h>
 #include "ConnectionManager.h"
 
 int ConnectionManager::getConnectionsFdSet() {
@@ -92,13 +93,15 @@ void ConnectionManager::writeAll() {
             //TODO handle socket exception
         }
         if(FD_ISSET(conn_sock_fd, write_fdset)) {
+            networkPipe.readInt();
             conn.sendData();
         }
     }
 }
 
-ConnectionManager::ConnectionManager()
+ConnectionManager::ConnectionManager(Pipe &networkThreadPipe_)
     : connections(),
+    networkPipe(networkThreadPipe_),
     mutex()
 {}
 
@@ -112,5 +115,5 @@ void ConnectionManager::setFdSets(fd_set *listen, fd_set *write, fd_set *excepti
 void ConnectionManager::addSender(Connection &c) {
     std::unique_lock<std::mutex> lock(mutex);
     std::cout << c.getId() << "wants to send\n";
-    FD_SET(c.getSock().getSockFd(), write_fdset);
+    networkPipe.writeInt(c.getId());
 }
