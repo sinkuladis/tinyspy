@@ -88,11 +88,17 @@ int ListeningSocket::isReady() const {
     return status == 3;
 }
 
+void ListeningSocket::setUnready()
+{
+    status=false;
+}
+
 Socket ListeningSocket::accept(int new_sock_domain, int new_sock_type) {
     Socket newSock;
     socklen_t addr_len = sizeof( newSock.sock_addr );
     int new_sockfd = ::accept4(sock_fd,( struct sockaddr * ) &newSock.sock_addr, &addr_len, SOCK_NONBLOCK);
     if(new_sockfd <= 0 ) {
+        setUnready();
         perror("cannot create a new socket");
     }else {
         newSock.sock_fd = new_sockfd;
